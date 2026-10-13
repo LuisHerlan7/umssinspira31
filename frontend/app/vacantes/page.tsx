@@ -118,6 +118,21 @@ UMSSPIRA / Oportunidades laborales </p>
         <h1 className="text-3xl font-bold text-gray-800">
           Vacantes disponibles
         </h1>
+        <div className="my-6 flex flex-wrap gap-3">
+          <Link
+            href="/vacantes"
+            className="inline-flex items-center rounded-lg bg-orange-500 px-5 py-3 font-semibold text-white hover:bg-orange-600"
+          >
+           Ver vacantes
+          </Link>
+
+  <Link
+    href="/postulaciones"
+    className="inline-flex items-center rounded-lg border-2 border-orange-500 bg-white px-5 py-3 font-semibold text-orange-700 hover:bg-orange-50"
+  >
+    Mis postulaciones
+  </Link>
+</div>
         <p className="mt-2 text-sm text-gray-600">
           Explora oportunidades laborales y encuentra la que mejor se
           adapte a tu perfil.
@@ -261,6 +276,14 @@ UMSSPIRA / Oportunidades laborales </p>
                   </p>
                 </div>
               )}
+               <div className="mt-5 border-t border-gray-100 pt-4">
+                 <Link
+                    href={`/vacantes/${vacancy.id}`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-orange-400 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-500"
+                  >
+                   Ver detalle de la vacante
+                   </Link>
+                </div>
             </article>
           ))}
         </section>
