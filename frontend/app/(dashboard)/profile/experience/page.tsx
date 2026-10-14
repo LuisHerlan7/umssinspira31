@@ -1,5 +1,5 @@
-import { ExperienceList } from "../../../../modules/profile/frontend/components/experience-list";
+import { redirect } from "next/navigation";
 
-export default function WorkExperiencePage() {
-  return <ExperienceList />;
+export default function LegacyExperiencePage() {
+  redirect("/perfil/experiencia-laboral");
 }

@@ -1,12 +1,12 @@
-import { ExperienceForm } from "../../../../../../modules/profile/frontend/components/experience-form";
+import { redirect } from "next/navigation";
 
 export const instant = false;
 
-export default async function EditWorkExperiencePage({
+export default async function LegacyEditExperiencePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <ExperienceForm experienceId={id} />;
+  redirect(`/perfil/experiencia-laboral/${encodeURIComponent(id)}/editar`);
 }

@@ -1,8 +1,13 @@
 import { Suspense } from 'react';
 import DetalleVacanteCliente from './DetalleVacanteCliente';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 
 export const instant = false;
+
+export const metadata: Metadata = {
+  title: 'Detalle de vacante | UMSSPIRA',
+};
 
 export default async function DetalleVacantePage({
 params,

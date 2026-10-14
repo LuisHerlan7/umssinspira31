@@ -9,6 +9,7 @@ const navigation = [
   { label: 'Inicio', href: '/' },
   { label: 'Vacantes', href: '/vacantes' },
   { label: 'Mis postulaciones', href: '/postulaciones' },
+  { label: 'Perfil', href: '/perfil/experiencia-laboral' },
 ];
 
 function NavigationLinks({ pathname }: { pathname?: string | null }) {
@@ -17,7 +18,12 @@ function NavigationLinks({ pathname }: { pathname?: string | null }) {
       pathname != null &&
       (item.href === '/'
         ? pathname === '/'
-        : pathname === item.href || pathname.startsWith(`${item.href}/`));
+        : pathname === item.href ||
+          pathname.startsWith(`${item.href}/`) ||
+          (item.href === '/perfil/experiencia-laboral' &&
+            (pathname.startsWith('/profile/experience') ||
+              pathname.startsWith('/skills') ||
+              pathname.startsWith('/perfil/formacion'))));
 
     return (
       <Link

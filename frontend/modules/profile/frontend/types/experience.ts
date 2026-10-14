@@ -9,7 +9,7 @@ export interface ExperienceInput {
   description: string;
 }
 
-// El backend agrega el UUID persistido en PostgreSQL a los campos del formulario.
+// El servicio de persistencia agrega un identificador estable a los datos del formulario.
 export interface WorkExperience extends ExperienceInput {
   id: string;
 }

@@ -1,108 +1,136 @@
 import type { ExperienceInput, WorkExperience } from "../types/experience";
 
-// Centraliza las llamadas usadas por las cuatro pantallas y comparte el
-// contrato REST de experiencia laboral con el backend NestJS.
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-const EXPERIENCES_URL = `${API_URL}/api/profile/experiences`;
+const STORAGE_KEY = "umssinspira:experiencia-laboral";
 
-// Convierte errores HTTP del API en mensajes visibles en la pantalla.
-async function throwResponseError(response: Response): Promise<never> {
-  if (response.status === 404) {
-    throw new Error(
-      "No se encontró el endpoint de experiencias (HTTP 404). Verifica que el backend esté actualizado y ejecuta las migraciones de Supabase.",
-    );
-  }
+function isWorkExperience(value: unknown): value is WorkExperience {
+  if (typeof value !== "object" || value === null) return false;
 
-  const responseText = await response.text();
-  if (!responseText) {
-    throw new Error(`La solicitud falló con estado HTTP ${response.status}.`);
-  }
+  const experience = value as Partial<WorkExperience>;
+  return (
+    typeof experience.id === "string" &&
+    typeof experience.company === "string" &&
+    typeof experience.position === "string" &&
+    typeof experience.startDate === "string" &&
+    typeof experience.endDate === "string" &&
+    typeof experience.currentlyWorking === "boolean" &&
+    typeof experience.employmentType === "string" &&
+    typeof experience.description === "string"
+  );
+}
 
-  if (
-    response.headers.get("content-type")?.includes("text/html") ||
-    /<!doctype\s+html|<html[\s>]/i.test(responseText)
-  ) {
-    throw new Error(
-      `El servicio de experiencias devolvió una respuesta inesperada (HTTP ${response.status}).`,
-    );
-  }
-
-  let body: unknown;
+function readExperiences(): WorkExperience[] {
+  let stored: string | null;
   try {
-    body = JSON.parse(responseText);
+    stored = window.localStorage.getItem(STORAGE_KEY);
   } catch {
-    throw new Error(responseText);
+    throw new Error("No se pudo acceder a las experiencias guardadas en este navegador.");
   }
 
-  if (typeof body === "object" && body !== null && "message" in body) {
-    const message = body.message;
-    if (typeof message === "string") throw new Error(message);
-    if (Array.isArray(message) && message.every((item) => typeof item === "string")) {
-      throw new Error(message.join(", "));
-    }
-  }
+  if (stored === null) return [];
 
-  throw new Error(responseText);
-}
-
-// Ejecuta solicitudes JSON y evita tratar una respuesta HTTP fallida como éxito.
-async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  let response: Response;
+  let parsed: unknown;
   try {
-    response = await fetch(url, {
-      ...init,
-      headers: {
-        "Content-Type": "application/json",
-        ...init?.headers,
-      },
-    });
-  } catch (error) {
-    const reason = error instanceof Error ? ` (${error.message})` : "";
-    throw new Error(
-      `No se pudo conectar con el servicio de experiencias. Verifica que el backend esté iniciado y configurado.${reason}`,
-    );
+    parsed = JSON.parse(stored);
+  } catch {
+    throw new Error("No se pudieron leer las experiencias guardadas en este navegador.");
   }
 
-  if (!response.ok) {
-    await throwResponseError(response);
+  if (!Array.isArray(parsed) || !parsed.every(isWorkExperience)) {
+    throw new Error("Los datos de experiencia laboral guardados no tienen un formato válido.");
   }
 
-  return (await response.json()) as T;
+  return parsed;
 }
 
-// Lista experiencias del perfil configurado en el backend.
-export function getExperiences(): Promise<WorkExperience[]> {
-  return requestJson<WorkExperience[]>(EXPERIENCES_URL);
+function writeExperiences(experiences: WorkExperience[]): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(experiences));
+  } catch {
+    throw new Error("No se pudieron guardar los cambios en este navegador.");
+  }
 }
 
-// Recupera una experiencia por UUID para ver sus datos o precargar la edición.
-export function getExperience(id: string): Promise<WorkExperience> {
-  return requestJson<WorkExperience>(`${EXPERIENCES_URL}/${encodeURIComponent(id)}`);
+function validateExperience(input: ExperienceInput): ExperienceInput {
+  const company = input.company.trim();
+  const position = input.position.trim();
+  const description = input.description.trim();
+  const employmentType = input.employmentType.trim();
+
+  if (!company || !position || !description || !employmentType || !input.startDate) {
+    throw new Error("Completa todos los campos obligatorios de la experiencia.");
+  }
+
+  if (!input.currentlyWorking && !input.endDate) {
+    throw new Error("Indica la fecha de finalización o marca que el empleo continúa.");
+  }
+
+  if (input.currentlyWorking && input.endDate) {
+    throw new Error("La fecha de finalización debe estar vacía si el empleo continúa.");
+  }
+
+  if (input.endDate && input.endDate < input.startDate) {
+    throw new Error("La fecha de finalización no puede ser anterior a la fecha de inicio.");
+  }
+
+  return {
+    ...input,
+    company,
+    position,
+    description,
+    employmentType,
+    endDate: input.currentlyWorking ? "" : input.endDate,
+  };
 }
 
-// Crea una experiencia desde el formulario /new y devuelve su UUID de base de datos.
-export function createExperience(input: ExperienceInput): Promise<WorkExperience> {
-  return requestJson<WorkExperience>(EXPERIENCES_URL, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+function createId(): string {
+  if (!globalThis.crypto?.randomUUID) {
+    throw new Error("Este navegador no permite generar un identificador seguro para la experiencia.");
+  }
+  return globalThis.crypto.randomUUID();
 }
 
-// Actualiza todos los campos editables del registro existente.
-export function updateExperience(id: string, input: ExperienceInput): Promise<WorkExperience> {
-  return requestJson<WorkExperience>(`${EXPERIENCES_URL}/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    body: JSON.stringify(input),
-  });
+export async function getExperiences(): Promise<WorkExperience[]> {
+  return readExperiences().sort((left, right) =>
+    right.startDate.localeCompare(left.startDate),
+  );
 }
 
-// Elimina el registro confirmado por la persona en el modal de la lista.
+export async function getExperience(id: string): Promise<WorkExperience> {
+  const experience = readExperiences().find((item) => item.id === id);
+  if (!experience) throw new Error("No se encontró la experiencia laboral.");
+  return experience;
+}
+
+export async function createExperience(input: ExperienceInput): Promise<WorkExperience> {
+  const experience: WorkExperience = {
+    ...validateExperience(input),
+    id: createId(),
+  };
+  writeExperiences([...readExperiences(), experience]);
+  return experience;
+}
+
+export async function updateExperience(
+  id: string,
+  input: ExperienceInput,
+): Promise<WorkExperience> {
+  const experiences = readExperiences();
+  if (!experiences.some((item) => item.id === id)) {
+    throw new Error("No se encontró la experiencia laboral.");
+  }
+
+  const updated: WorkExperience = {
+    ...validateExperience(input),
+    id,
+  };
+  writeExperiences(experiences.map((item) => (item.id === id ? updated : item)));
+  return updated;
+}
+
 export async function deleteExperience(id: string): Promise<void> {
-  const response = await fetch(`${EXPERIENCES_URL}/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-
-  if (!response.ok) {
-    await throwResponseError(response);
+  const experiences = readExperiences();
+  if (!experiences.some((item) => item.id === id)) {
+    throw new Error("No se encontró la experiencia laboral.");
   }
+  writeExperiences(experiences.filter((item) => item.id !== id));
 }
