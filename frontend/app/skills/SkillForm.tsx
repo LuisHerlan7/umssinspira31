@@ -1,7 +1,8 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   categories,
   levels,
@@ -18,10 +19,16 @@ const PROFILE_AGE = 25;
 type Props = {
   mode: 'create' | 'edit';
   initialSkill?: Skill;
+  initialName?: string;
 };
 
-export default function SkillForm({ mode, initialSkill }: Props) {
-  const [name, setName] = useState(initialSkill?.name ?? '');
+export default function SkillForm({
+  mode,
+  initialSkill,
+  initialName,
+}: Props) {
+  const router = useRouter();
+  const [name, setName] = useState(initialSkill?.name ?? initialName ?? '');
   const [category, setCategory] = useState(
     initialSkill?.category ?? ''
   );
@@ -33,15 +40,6 @@ export default function SkillForm({ mode, initialSkill }: Props) {
   );
 
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (initialSkill) {
-      setName(initialSkill.name);
-      setCategory(initialSkill.category);
-      setLevel(initialSkill.level);
-      setYears(initialSkill.years?.toString() ?? '');
-    }
-  }, [initialSkill]);
 
   const selectSuggestion = (skill: string) => {
     setName(skill);
@@ -151,7 +149,7 @@ export default function SkillForm({ mode, initialSkill }: Props) {
       );
     }
 
-    window.location.href = '/skills';
+    router.push('/skills');
   };
 
   return (

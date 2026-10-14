@@ -1,12 +1,12 @@
-import { ExperienceDetail } from "../../../../../modules/profile/frontend/components/experience-detail";
+import { redirect } from "next/navigation";
 
 export const instant = false;
 
-export default async function WorkExperienceDetailPage({
+export default async function LegacyExperienceDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <ExperienceDetail key={id} experienceId={id} />;
+  redirect(`/perfil/experiencia-laboral/${encodeURIComponent(id)}`);
 }

@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import {
   BriefcaseBusiness,
   MapPin,
@@ -14,83 +14,57 @@ import {
   Building2,
   X,
 } from 'lucide-react';
-
-const STORAGE_KEY = 'umsspira-vacantes';
-
-type Vacancy = {
-  id: string | number;
-  title: string;
-  company: string;
-  area: string;
-  location: string;
-  modality: string;
-  description: string;
-  requirements: string[];
-  conditions?: string;
-  createdAt?: string;
-};
-
-const DEMO_VACANCIES: Vacancy[] = [
-  {
-    id: 1,
-    title: 'Analista de Datos Junior',
-    company: 'Empresa de Tecnología',
-    area: 'Datos y Analítica',
-    location: 'Cochabamba, Bolivia',
-    modality: 'Híbrido',
-    description:
-      'Apoya en el análisis de datos, elaboración de reportes y generación de información para la toma de decisiones.',
-    requirements: ['SQL básico', 'Excel', 'Pensamiento analítico'],
-  },
-  {
-    id: 2,
-    title: 'Desarrollador Frontend Junior',
-    company: 'Empresa de Software',
-    area: 'Desarrollo de Software',
-    location: 'Bolivia',
-    modality: 'Remoto',
-    description:
-      'Participa en el desarrollo de interfaces web y colabora con el equipo de diseño y desarrollo.',
-    requirements: ['JavaScript', 'React', 'Git'],
-  },
-  {
-    id: 3,
-    title: 'Asistente de Soporte TI',
-    company: 'Servicios Informáticos',
-    area: 'Infraestructura y Soporte',
-    location: 'Cochabamba, Bolivia',
-    modality: 'Presencial',
-    description:
-      'Brinda soporte técnico, registra incidencias y ayuda a mantener los equipos y sistemas operativos.',
-    requirements: ['Windows', 'Redes básicas', 'Atención al usuario'],
-  },
-];
+import {
+  DEMO_VACANCIES,
+  parseSavedVacancies,
+} from './vacancy-data';
+import {
+  SERVER_STORAGE_SNAPSHOT,
+  STORAGE_READ_ERROR_SNAPSHOT,
+  readVacancySnapshot,
+  subscribeToLocalStorage,
+} from './storage';
 
 export default function VacantesPage() {
   const [search, setSearch] = useState('');
   const [area, setArea] = useState('Todas');
   const [modality, setModality] = useState('Todas');
-  const [savedVacancies, setSavedVacancies] = useState<Vacancy[]>([]);
-  const [storageError, setStorageError] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-
-      if (saved) {
-        const parsed: unknown = JSON.parse(saved);
-
-        if (Array.isArray(parsed)) {
-          setSavedVacancies(parsed as Vacancy[]);
-        }
-      }
-    } catch {
-      setStorageError(true);
-    } finally {
-      setLoaded(true);
+  const snapshot = useSyncExternalStore(
+    subscribeToLocalStorage,
+    readVacancySnapshot,
+    () => SERVER_STORAGE_SNAPSHOT,
+  );
+  const { savedVacancies, storageError, loaded } = useMemo(() => {
+    if (snapshot === SERVER_STORAGE_SNAPSHOT) {
+      return {
+        savedVacancies: [],
+        storageError: false,
+        loaded: false,
+      };
     }
-  }, []);
+
+    if (snapshot === STORAGE_READ_ERROR_SNAPSHOT) {
+      return {
+        savedVacancies: [],
+        storageError: true,
+        loaded: true,
+      };
+    }
+
+    try {
+      return {
+        savedVacancies: parseSavedVacancies(snapshot),
+        storageError: false,
+        loaded: true,
+      };
+    } catch {
+      return {
+        savedVacancies: [],
+        storageError: true,
+        loaded: true,
+      };
+    }
+  }, [snapshot]);
 
   const allVacancies = useMemo(
     () => [...DEMO_VACANCIES, ...savedVacancies],

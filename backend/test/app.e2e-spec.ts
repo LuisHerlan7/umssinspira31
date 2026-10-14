@@ -10,7 +10,10 @@ describe('AppController (e2e)', () => {
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider('SUPABASE_CLIENT')
+      .useValue({})
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
@@ -20,7 +23,7 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect('UMSSINSPIRA2 Backend funcionando');
   });
 
   afterEach(async () => {

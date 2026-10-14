@@ -47,7 +47,7 @@ export function ExperienceDetail({ experienceId }: { experienceId: string }) {
   const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    // Carga desde el mismo endpoint que alimenta el listado y la edición.
+    // Carga desde el mismo servicio que alimenta el listado y la edición.
     let active = true;
 
     getExperience(experienceId)
@@ -58,7 +58,7 @@ export function ExperienceDetail({ experienceId }: { experienceId: string }) {
         if (active) {
           const message = error instanceof Error ? error.message : "No se pudo cargar la experiencia.";
           setLoadError(message);
-          if (message.includes("No se encontró")) router.replace("/profile/experience");
+          if (message.includes("No se encontró")) router.replace("/perfil/experiencia-laboral");
         }
       })
       .finally(() => {
@@ -78,7 +78,7 @@ export function ExperienceDetail({ experienceId }: { experienceId: string }) {
       <ExperienceShell>
         <div className="rounded-lg border border-red-200 bg-white p-6 text-sm text-red-700" role="alert">
           <p>{loadError}</p>
-          <Link href="/profile/experience" className="mt-4 inline-flex text-xs font-semibold underline">
+          <Link href="/perfil/experiencia-laboral" className="mt-4 inline-flex text-xs font-semibold underline">
             Volver al listado
           </Link>
         </div>
@@ -95,9 +95,9 @@ export function ExperienceDetail({ experienceId }: { experienceId: string }) {
     <ExperienceShell>
       <main>
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.09em] text-slate-500">
-          Perfil de Vinculación • Mis habilidades • Detalle
+          Perfil de vinculación · Experiencia laboral
         </p>
-        <Link href="/profile/experience" className="mb-4 inline-flex items-center gap-2 text-xs font-medium text-[#53677f] hover:text-[#202a3b]">
+        <Link href="/perfil/experiencia-laboral" className="mb-4 inline-flex items-center gap-2 text-xs font-medium text-[#53677f] hover:text-[#202a3b]">
           <ArrowLeft size={14} />
           Volver al listado
         </Link>
@@ -140,10 +140,10 @@ export function ExperienceDetail({ experienceId }: { experienceId: string }) {
           </section>
 
           <div className="flex flex-wrap justify-end gap-2 border-t border-[#e7ebf0] pt-4">
-            <Link href="/profile/experience" className="rounded-md border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+            <Link href="/perfil/experiencia-laboral" className="rounded-md border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
               Volver al listado
             </Link>
-            <Link href={`/profile/experience/${encodeURIComponent(experience.id)}/edit`} className="rounded-md bg-[#f2a45b] px-4 py-2 text-xs font-semibold text-[#2c2520] hover:bg-[#e99549]">
+            <Link href={`/perfil/experiencia-laboral/${encodeURIComponent(experience.id)}/editar`} className="rounded-md bg-[#f2a45b] px-4 py-2 text-xs font-semibold text-[#2c2520] hover:bg-[#e99549]">
               Editar experiencia
             </Link>
           </div>

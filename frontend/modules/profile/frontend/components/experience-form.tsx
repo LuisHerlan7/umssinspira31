@@ -12,7 +12,7 @@ import {
 } from "../services/experience.service";
 import { ExperienceShell } from "./experience-shell";
 
-// Estos son los mismos campos que valida y persiste el endpoint de experiencia.
+// Estos son los campos que valida y persiste el servicio de experiencia.
 const initialForm: ExperienceInput = {
   company: "",
   position: "",
@@ -41,7 +41,7 @@ export function ExperienceForm({ experienceId }: { experienceId?: string }) {
   useEffect(() => {
     if (!experienceId) return;
 
-    // Precarga por UUID desde el backend para que la edición use el dato persistido.
+    // Precarga por identificador para editar el dato persistido.
     let active = true;
     getExperience(experienceId)
       .then((experience) => {
@@ -102,8 +102,7 @@ export function ExperienceForm({ experienceId }: { experienceId?: string }) {
       endDate: form.currentlyWorking ? "" : form.endDate,
     };
 
-    // Crea o actualiza en PostgreSQL antes de volver al listado, evitando mostrar
-    // éxito si el API o la base de datos rechazaron la operación.
+    // Confirma la persistencia antes de volver al listado.
     setIsSaving(true);
     try {
       if (experienceId) {
@@ -111,7 +110,7 @@ export function ExperienceForm({ experienceId }: { experienceId?: string }) {
       } else {
         await createExperience(experience);
       }
-      router.push("/profile/experience");
+      router.push("/perfil/experiencia-laboral");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "No se pudo guardar la experiencia.");
     } finally {
@@ -132,7 +131,7 @@ export function ExperienceForm({ experienceId }: { experienceId?: string }) {
       <ExperienceShell>
         <div className="rounded-lg border border-red-200 bg-white p-6 text-sm text-red-700" role="alert">
           <p>{loadError}</p>
-          <Link href="/profile/experience" className="mt-4 inline-flex text-xs font-semibold underline">
+          <Link href="/perfil/experiencia-laboral" className="mt-4 inline-flex text-xs font-semibold underline">
             Volver al listado
           </Link>
         </div>
@@ -143,12 +142,12 @@ export function ExperienceForm({ experienceId }: { experienceId?: string }) {
   return (
     <ExperienceShell>
       <main>
-        <Link href="/profile/experience" className="mb-4 inline-flex items-center gap-2 text-xs font-medium text-[#53677f] hover:text-[#202a3b]">
+        <Link href="/perfil/experiencia-laboral" className="mb-4 inline-flex items-center gap-2 text-xs font-medium text-[#53677f] hover:text-[#202a3b]">
           <ArrowLeft size={14} />
           Volver al listado
         </Link>
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.09em] text-slate-500">
-          Perfil de Vinculación • Mis habilidades • Agregar
+          Perfil de vinculación · Experiencia laboral
         </p>
         <h1 className="mb-5 text-2xl font-bold tracking-tight text-[#202a3b]">
           {isEditing ? "Editar experiencia" : "Agregar experiencia laboral"}
@@ -266,7 +265,7 @@ export function ExperienceForm({ experienceId }: { experienceId?: string }) {
           </div>
 
           <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-4">
-            <Link href="/profile/experience" className="rounded-md border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+            <Link href="/perfil/experiencia-laboral" className="rounded-md border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
               Cancelar
             </Link>
             <button disabled={isSaving} type="submit" className="rounded-md bg-[#f2a45b] px-4 py-2 text-xs font-semibold text-[#2c2520] shadow-sm hover:bg-[#e99549] disabled:opacity-60">

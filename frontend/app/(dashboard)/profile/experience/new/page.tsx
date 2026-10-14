@@ -1,5 +1,5 @@
-import { ExperienceForm } from "../../../../../modules/profile/frontend/components/experience-form";
+import { redirect } from "next/navigation";
 
-export default function NewWorkExperiencePage() {
-  return <ExperienceForm />;
+export default function LegacyNewExperiencePage() {
+  redirect("/perfil/experiencia-laboral/agregar");
 }

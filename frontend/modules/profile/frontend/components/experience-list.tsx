@@ -7,8 +7,7 @@ import { formatExperienceDate, type WorkExperience } from "../types/experience";
 import { deleteExperience, getExperiences } from "../services/experience.service";
 import { ExperienceShell } from "./experience-shell";
 
-// La vista de lista usa el endpoint REST para que la misma experiencia guardada
-// en PostgreSQL aparezca también en las pantallas de detalle y edición.
+// La lista lee del servicio compartido con las pantallas de detalle y edición.
 export function ExperienceList() {
   const [experiences, setExperiences] = useState<WorkExperience[]>([]);
   const [ready, setReady] = useState(false);
@@ -61,15 +60,15 @@ export function ExperienceList() {
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.09em] text-slate-500">
-              Perfil de Vinculación • Mis habilidades • Detalle
+              Perfil de vinculación · Experiencia laboral
             </p>
             <h1 className="text-2xl font-bold tracking-tight text-[#202a3b]">Mi experiencia laboral</h1>
             <p className="mt-1 max-w-2xl text-xs text-slate-600">
-              Gestiona tu experiencia profesional para mejorar tu compatibilidad con las vacantes disponibles.
+              Consulta y actualiza tu trayectoria profesional para mantener completo tu perfil.
             </p>
           </div>
           <Link
-            href="/profile/experience/new"
+            href="/perfil/experiencia-laboral/agregar"
             className="inline-flex h-9 items-center gap-2 rounded-md bg-[#f2a45b] px-4 text-xs font-semibold text-[#2c2520] shadow-sm transition hover:bg-[#e99549]"
           >
             <Plus size={15} />
@@ -99,7 +98,7 @@ export function ExperienceList() {
             <div className="rounded-lg bg-white p-8 text-center">
               <h2 className="font-semibold">Aún no tienes experiencias laborales</h2>
               <p className="mt-1 text-sm text-slate-500">Agrega tu trayectoria para mejorar la compatibilidad con vacantes.</p>
-              <Link href="/profile/experience/new" className="mt-4 inline-flex rounded-md bg-[#f2a45b] px-4 py-2 text-sm font-semibold">
+              <Link href="/perfil/experiencia-laboral/agregar" className="mt-4 inline-flex rounded-md bg-[#f2a45b] px-4 py-2 text-sm font-semibold">
                 Agregar experiencia
               </Link>
             </div>
@@ -110,7 +109,7 @@ export function ExperienceList() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-sm font-bold text-[#202a3b]">
-                        <Link href={`/profile/experience/${encodeURIComponent(experience.id)}`} className="hover:underline">
+                        <Link href={`/perfil/experiencia-laboral/${encodeURIComponent(experience.id)}`} className="hover:underline">
                           {experience.company}
                         </Link>
                       </h2>
@@ -132,7 +131,7 @@ export function ExperienceList() {
                   <div className="flex shrink-0 gap-2">
                     <Link
                       aria-label={`Editar experiencia en ${experience.company}`}
-                      href={`/profile/experience/${encodeURIComponent(experience.id)}/edit`}
+                      href={`/perfil/experiencia-laboral/${encodeURIComponent(experience.id)}/editar`}
                       className="inline-flex items-center gap-1.5 rounded-md border border-[#e1e7ef] px-2.5 py-2 text-xs font-semibold text-[#35516e] hover:bg-[#f2f6fa]"
                     >
                       <Pencil size={14} />
@@ -157,7 +156,7 @@ export function ExperienceList() {
 
         <div className="mt-5 flex items-center gap-2 rounded-md border border-[#d7e2f4] bg-[#eef4ff] px-3 py-3 text-[11px] text-[#445b7b]">
           <Info size={14} className="shrink-0" />
-          Tu experiencia laboral es utilizada por el sistema de matching para encontrar vacantes compatibles con tu perfil.
+          Tu experiencia laboral forma parte de tu perfil profesional y puede complementar tus habilidades al explorar vacantes.
         </div>
       </main>
 
