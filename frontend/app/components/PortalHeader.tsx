@@ -1,6 +1,7 @@
 
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -10,9 +11,37 @@ const navigation = [
   { label: 'Mis postulaciones', href: '/postulaciones' },
 ];
 
-export default function PortalHeader() {
-  const pathname = usePathname();
+function NavigationLinks({ pathname }: { pathname?: string | null }) {
+  return navigation.map((item) => {
+    const active =
+      pathname != null &&
+      (item.href === '/'
+        ? pathname === '/'
+        : pathname === item.href || pathname.startsWith(`${item.href}/`));
 
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        aria-current={active ? 'page' : undefined}
+        className={`border-b-2 px-3 py-3 text-sm transition-colors sm:px-4 ${
+          active
+            ? 'border-[#ed9635] font-bold text-[#17384b]'
+            : 'border-transparent text-gray-600 hover:text-[#17384b]'
+        }`}
+      >
+        {item.label}
+      </Link>
+    );
+  });
+}
+
+function ActiveNavigationLinks() {
+  const pathname = usePathname();
+  return <NavigationLinks pathname={pathname} />;
+}
+
+export default function PortalHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#e7e0d4] bg-white">
       <div className="mx-auto flex min-h-[76px] max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-3 sm:px-8">
@@ -35,28 +64,9 @@ export default function PortalHeader() {
           aria-label="Navegación principal"
           className="flex flex-wrap items-center gap-1 sm:gap-2"
         >
-          {navigation.map((item) => {
-            const active =
-              item.href === '/'
-                ? pathname === '/'
-                : pathname === item.href ||
-                  pathname.startsWith(`${item.href}/`);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={`border-b-2 px-3 py-3 text-sm transition-colors sm:px-4 ${
-                  active
-                    ? 'border-[#ed9635] font-bold text-[#17384b]'
-                    : 'border-transparent text-gray-600 hover:text-[#17384b]'
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+          <Suspense fallback={<NavigationLinks />}>
+            <ActiveNavigationLinks />
+          </Suspense>
         </nav>
 
         <div className="hidden items-center gap-3 border-l border-gray-200 pl-4 md:flex">
