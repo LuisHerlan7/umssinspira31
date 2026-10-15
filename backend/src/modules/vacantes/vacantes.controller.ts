@@ -12,6 +12,7 @@ import {
 import { AddRequisitosDto } from './dto/add-requisitos.dto';
 import { CreateVacanteDto } from './dto/create-vacante.dto';
 import { ValidarEstructuraVacanteDto } from './dto/validar-estructura-vacante.dto';
+import { VacantesIndexService } from './indexacion/vacantes-index.service';
 import { VacantesEstructuraService } from './vacantes-estructura.service';
 import { VacantesService } from './vacantes.service';
 
@@ -20,6 +21,7 @@ export class VacantesController {
   constructor(
     private readonly vacantesEstructuraService: VacantesEstructuraService,
     private readonly vacantesService: VacantesService,
+    private readonly vacantesIndexService: VacantesIndexService,
   ) {}
 
   @Post('estructura/validar')
@@ -31,6 +33,11 @@ export class VacantesController {
   @Get('disponibilidad')
   consultarDisponibilidad(@Query('buscar') buscar?: string) {
     return this.vacantesService.consultarDisponibilidad(buscar);
+  }
+
+  @Get('buscar')
+  buscar(@Query('q') query = '') {
+    return this.vacantesIndexService.buscar(query);
   }
 
   @Post()
@@ -48,6 +55,11 @@ export class VacantesController {
   @Get(':id')
   obtenerPorId(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.vacantesService.obtenerPorId(id);
+  }
+
+  @Post(':id/indexar')
+  indexar(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.vacantesIndexService.indexarVacante(id);
   }
 
   @Post(':id/requisitos')

@@ -55,7 +55,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       },
       cache: 'no-store',
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw error;
+    }
+
     throw new Error(
       'No se pudo conectar con el servicio de vacantes. Inténtalo nuevamente.',
     );
@@ -93,6 +97,13 @@ export function getVacancy(id: string) {
   return request<Vacancy>(`/vacantes/${encodeURIComponent(id)}`);
 }
 
+export function searchIndexedVacancies(query: string, signal?: AbortSignal) {
+  const search = new URLSearchParams({ q: query.trim() });
+  return request<Vacancy[]>(`/vacantes/buscar?${search.toString()}`, {
+    signal,
+  });
+}
+
 export function listVacancies(idEmpresa: string) {
   const query = new URLSearchParams({ idEmpresa });
   return request<Vacancy[]>(`/vacantes?${query.toString()}`);
@@ -101,4 +112,9 @@ export function listVacancies(idEmpresa: string) {
 export function isVacancyAvailable(status: string) {
   // Mapeo provisional para HU3; Equipo 4 definirá el catálogo oficial.
   return status.trim().toLowerCase() === 'disponible';
+}
+
+export function getVacancyIdentifier(vacancy: Pick<Vacancy, 'id'>) {
+  // HU1/HU2 sustituirán este adaptador cuando exista un código oficial.
+  return vacancy.id;
 }
