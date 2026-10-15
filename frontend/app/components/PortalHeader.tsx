@@ -4,6 +4,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import CompanyPortalHeader from './CompanyPortalHeader';
 
 const navigation = [
   { label: 'Inicio', href: '/' },
@@ -47,7 +48,7 @@ function ActiveNavigationLinks() {
   return <NavigationLinks pathname={pathname} />;
 }
 
-export default function PortalHeader() {
+function PublicPortalHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#e7e0d4] bg-white">
       <div className="mx-auto flex min-h-[76px] max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-3 sm:px-8">
@@ -90,5 +91,24 @@ export default function PortalHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+function HeaderForRoute() {
+  const pathname = usePathname();
+  return pathname && (
+    pathname === '/empresa' ||
+    pathname.startsWith('/empresa/') ||
+    /^\/vacantes\/[^/]+\/editar\/?$/.test(pathname)
+  )
+    ? <CompanyPortalHeader pathname={pathname} />
+    : <PublicPortalHeader />;
+}
+
+export default function PortalHeader() {
+  return (
+    <Suspense fallback={<PublicPortalHeader />}>
+      <HeaderForRoute />
+    </Suspense>
   );
 }

@@ -9,6 +9,13 @@ export type Vacancy = {
   modality: string;
   description: string;
   requirements: string[];
+  status?: string;
+  code?: string;
+  requirementDetails?: Array<{
+    name: string;
+    level: string;
+    type: string;
+  }>;
   conditions?: string;
   createdAt?: string;
 };
@@ -67,6 +74,16 @@ function isVacancy(value: unknown): value is Vacancy {
     typeof vacancy.description === 'string' &&
     Array.isArray(vacancy.requirements) &&
     vacancy.requirements.every((item) => typeof item === 'string') &&
+    (vacancy.status === undefined || typeof vacancy.status === 'string') &&
+    (vacancy.code === undefined || typeof vacancy.code === 'string') &&
+    (vacancy.requirementDetails === undefined ||
+      (Array.isArray(vacancy.requirementDetails) &&
+        vacancy.requirementDetails.every((item: unknown) => {
+          if (typeof item !== 'object' || item === null) return false;
+          const detail = item as Record<string, unknown>;
+          return typeof detail.name === 'string' &&
+            typeof detail.level === 'string' && typeof detail.type === 'string';
+        }))) &&
     (vacancy.conditions === undefined ||
       typeof vacancy.conditions === 'string') &&
     (vacancy.createdAt === undefined ||
@@ -90,14 +107,23 @@ export function readSavedVacancies(): Vacancy[] {
 }
 
 export function readAllVacancies(): Vacancy[] {
-  return [...DEMO_VACANCIES, ...readSavedVacancies()];
+  return mergeVacancies(readSavedVacancies());
+}
+
+// Saved versions override demos without changing their position in the list.
+export function mergeVacancies(savedVacancies: Vacancy[]): Vacancy[] {
+  const vacancies = new Map<string, Vacancy>();
+  for (const vacancy of [...DEMO_VACANCIES, ...savedVacancies]) {
+    vacancies.set(String(vacancy.id), vacancy);
+  }
+  return Array.from(vacancies.values());
 }
 
 export function findVacancyIn(
   id: string,
   savedVacancies: Vacancy[],
 ): Vacancy | undefined {
-  return [...DEMO_VACANCIES, ...savedVacancies].find(
+  return mergeVacancies(savedVacancies).find(
     (vacancy) => String(vacancy.id) === id,
   );
 }

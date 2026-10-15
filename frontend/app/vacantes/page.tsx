@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import {
-  DEMO_VACANCIES,
+  mergeVacancies,
   parseSavedVacancies,
 } from './vacancy-data';
 import {
@@ -67,7 +67,7 @@ export default function VacantesPage() {
   }, [snapshot]);
 
   const allVacancies = useMemo(
-    () => [...DEMO_VACANCIES, ...savedVacancies],
+    () => mergeVacancies(savedVacancies),
     [savedVacancies],
   );
 
