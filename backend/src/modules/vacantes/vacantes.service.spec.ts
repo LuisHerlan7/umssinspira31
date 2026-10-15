@@ -137,6 +137,34 @@ class FakeSupabaseClient {
       return { data: null, error: null };
     }
 
+    if (name === 'actualizar_vacante_con_requisitos') {
+      const id = String(params.p_id_vacante);
+      const vacancy = this.vacancies.get(id);
+      if (!vacancy) {
+        return {
+          data: null,
+          error: { code: 'P0002', message: 'VACANTE_NO_EXISTE' },
+        };
+      }
+
+      vacancy.titulo = String(params.p_titulo);
+      vacancy.modalidad = String(params.p_modalidad);
+      vacancy.descripcion = String(params.p_descripcion);
+      vacancy.ubicacion = String(params.p_ubicacion);
+      vacancy.area = String(params.p_area);
+      vacancy.condiciones = String(params.p_condiciones);
+      vacancy.vacante_requerimiento_laboral = (
+        params.p_requisitos as string[]
+      ).map((requirement) => ({
+        requerimiento_laboral: {
+          id: this.nextUuid(),
+          titulo: requirement,
+        },
+      }));
+
+      return { data: id, error: null };
+    }
+
     throw new Error(`RPC no simulada: ${name}`);
   }
 
@@ -322,5 +350,45 @@ describe('VacantesService - HU5-S1-03', () => {
 
     expect(vacancies).toHaveLength(1);
     expect(vacancies[0].idEmpresa).toBe(COMPANY_ID);
+  });
+
+  it('actualiza los campos persistidos y reemplaza los requisitos', async () => {
+    const created = await service.crear(validDto());
+
+    const updated = await service.actualizar(created.id, {
+      titulo: 'Arquitecto de Software',
+      modalidad: 'Remoto',
+      descripcion: 'Diseña soluciones técnicas para productos empresariales.',
+      ubicacion: 'Bolivia',
+      area: 'Arquitectura',
+      condiciones: 'Contrato a tiempo completo.',
+      requisitos: ['TypeScript', 'Arquitectura hexagonal'],
+    });
+
+    expect(updated).toMatchObject({
+      id: created.id,
+      titulo: 'Arquitecto de Software',
+      modalidad: 'Remoto',
+      ubicacion: 'Bolivia',
+      area: 'Arquitectura',
+    });
+    expect(updated.requisitos.map((item) => item.nombre)).toEqual([
+      'TypeScript',
+      'Arquitectura hexagonal',
+    ]);
+  });
+
+  it('responde 404 al actualizar una vacante inexistente', async () => {
+    await expect(
+      service.actualizar('99999999-9999-4999-8999-999999999999', {
+        titulo: 'Vacante inexistente',
+        modalidad: 'Remoto',
+        descripcion: 'Descripción válida para intentar la actualización.',
+        ubicacion: 'Bolivia',
+        area: 'Tecnología',
+        condiciones: '',
+        requisitos: ['TypeScript'],
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

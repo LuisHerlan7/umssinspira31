@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { UpdateVacanteDto } from '../dto/update-vacante.dto';
 import { VacantesService } from '../vacantes.service';
 import { ElasticsearchService } from './elasticsearch.service';
 import type { VacancyIndexDocument } from './vacancy-index.types';
@@ -14,14 +15,19 @@ export class VacantesIndexService {
 
   async indexarVacante(id: string) {
     const vacancy = await this.vacantesService.obtenerPorId(id);
-    const document = this.mapToIndexDocument(vacancy);
-    const index = await this.elasticsearchService.indexVacancy(document);
+    const index = await this.indexarFuente(vacancy);
 
     return { indexed: true, id: vacancy.id, index };
   }
 
   buscar(query: string) {
     return this.elasticsearchService.searchVacancies(query);
+  }
+
+  async actualizarVacante(id: string, dto: UpdateVacanteDto) {
+    const vacancy = await this.vacantesService.actualizar(id, dto);
+    await this.indexarFuente(vacancy);
+    return vacancy;
   }
 
   mapToIndexDocument(vacancy: VacancySource): VacancyIndexDocument {
@@ -42,5 +48,11 @@ export class VacantesIndexService {
         nombre: requirement.nombre,
       })),
     };
+  }
+
+  private indexarFuente(vacancy: VacancySource) {
+    return this.elasticsearchService.indexVacancy(
+      this.mapToIndexDocument(vacancy),
+    );
   }
 }

@@ -19,5 +19,5 @@ export default async function EditarVacantePage({
     );
   }
 
-  return <EditarVacanteForm id={id} />;
+  return <EditarVacanteForm key={id} id={id} />;
 }

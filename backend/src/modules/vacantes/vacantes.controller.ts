@@ -6,11 +6,13 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
 import { AddRequisitosDto } from './dto/add-requisitos.dto';
 import { CreateVacanteDto } from './dto/create-vacante.dto';
+import { UpdateVacanteDto } from './dto/update-vacante.dto';
 import { ValidarEstructuraVacanteDto } from './dto/validar-estructura-vacante.dto';
 import { VacantesIndexService } from './indexacion/vacantes-index.service';
 import { VacantesEstructuraService } from './vacantes-estructura.service';
@@ -55,6 +57,14 @@ export class VacantesController {
   @Get(':id')
   obtenerPorId(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.vacantesService.obtenerPorId(id);
+  }
+
+  @Patch(':id')
+  actualizar(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateVacanteDto,
+  ) {
+    return this.vacantesIndexService.actualizarVacante(id, dto);
   }
 
   @Post(':id/indexar')

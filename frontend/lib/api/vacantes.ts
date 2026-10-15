@@ -29,6 +29,8 @@ export type CreateVacancyInput = {
   requisitos: string[];
 };
 
+export type UpdateVacancyInput = Omit<CreateVacancyInput, 'idEmpresa'>;
+
 type ApiErrorBody = {
   message?: string | string[];
 };
@@ -95,6 +97,13 @@ export function createVacancy(input: CreateVacancyInput) {
 
 export function getVacancy(id: string) {
   return request<Vacancy>(`/vacantes/${encodeURIComponent(id)}`);
+}
+
+export function updateVacancy(id: string, input: UpdateVacancyInput) {
+  return request<Vacancy>(`/vacantes/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
 }
 
 export function searchIndexedVacancies(query: string, signal?: AbortSignal) {

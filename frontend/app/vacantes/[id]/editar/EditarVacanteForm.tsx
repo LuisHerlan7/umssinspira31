@@ -1,232 +1,226 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import {
-  crearVacanteEjemplo,
-  guardarDemostracion,
-  leerDemostracion,
+  getVacancy,
+  updateVacancy,
+} from '../../../../lib/api/vacantes';
+import {
+  crearPayloadActualizacion,
+  crearVacanteEditable,
   requisitoDuplicado,
   validarVacante,
   type EstadoEdicion,
-  type RequisitoTecnico,
   type VacanteEditable,
-} from "./vacante-edicion";
+} from './vacante-edicion';
 
 type Props = {
   id: string;
 };
 
 const estiloCampo =
-  "mt-2 w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-orange-400";
+  'mt-2 w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-orange-400';
 
-const estiloEtiqueta =
-  "block text-xs font-semibold text-slate-700";
+const estiloEtiqueta = 'block text-xs font-semibold text-slate-700';
+
+function clonarVacante(vacante: VacanteEditable): VacanteEditable {
+  return { ...vacante, requisitos: [...vacante.requisitos] };
+}
 
 export default function EditarVacanteForm({ id }: Props) {
-  const [vacante, setVacante] = useState<VacanteEditable>(() =>
-    crearVacanteEjemplo(id)
-  );
-
-  const [original, setOriginal] = useState<VacanteEditable>(() =>
-    crearVacanteEjemplo(id)
-  );
-
-  const [requisitoNuevo, setRequisitoNuevo] = useState("");
-  const [nivel, setNivel] =
-    useState<RequisitoTecnico["nivel"]>("Avanzado");
-  const [tipo, setTipo] =
-    useState<RequisitoTecnico["tipo"]>("Obligatorio");
-
+  const [vacante, setVacante] = useState<VacanteEditable | null>(null);
+  const [original, setOriginal] = useState<VacanteEditable | null>(null);
+  const [requisitoNuevo, setRequisitoNuevo] = useState('');
   const [estadoPantalla, setEstadoPantalla] =
-    useState<EstadoEdicion>("inicial");
-  const [mensajeError, setMensajeError] = useState("");
+    useState<EstadoEdicion>('cargando');
+  const [mensajeError, setMensajeError] = useState('');
 
-  // Recupera únicamente los cambios guardados por esta demostración.
   useEffect(() => {
-    const guardada = leerDemostracion(id);
-    const inicial = guardada ?? crearVacanteEjemplo(id);
+    let active = true;
 
-    setVacante(inicial);
-    setOriginal(inicial);
-    setEstadoPantalla("inicial");
-    setMensajeError("");
-    setRequisitoNuevo("");
+    getVacancy(id)
+      .then((persistida) => {
+        if (!active) return;
+        const editable = crearVacanteEditable(persistida);
+        setVacante(editable);
+        setOriginal(clonarVacante(editable));
+        setEstadoPantalla('inicial');
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setMensajeError(
+          error instanceof Error
+            ? error.message
+            : 'No fue posible cargar la vacante.',
+        );
+        setEstadoPantalla('error');
+      });
+
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const hayCambios =
+    vacante !== null &&
+    original !== null &&
     JSON.stringify(vacante) !== JSON.stringify(original);
 
-  function actualizarVacante(
-    cambios: Partial<VacanteEditable>
-  ) {
-    setVacante((actual) => ({
-      ...actual,
-      ...cambios,
-    }));
-
-    setEstadoPantalla("pendiente");
-    setMensajeError("");
+  function actualizarVacante(cambios: Partial<VacanteEditable>) {
+    setVacante((actual) => (actual ? { ...actual, ...cambios } : actual));
+    setEstadoPantalla('pendiente');
+    setMensajeError('');
   }
 
   function agregarRequisito() {
+    if (!vacante) return;
     const nombre = requisitoNuevo.trim();
 
-    if (nombre.length < 2) {
-      setMensajeError(
-        "Ingresa un requisito técnico válido."
-      );
-      setEstadoPantalla("error");
+    if (nombre.length < 1 || nombre.length > 100) {
+      setMensajeError('Ingresa un requisito técnico válido.');
+      setEstadoPantalla('error');
       return;
     }
 
     if (requisitoDuplicado(vacante.requisitos, nombre)) {
-      setMensajeError(
-        "Este requisito ya está asociado a la vacante."
-      );
-      setEstadoPantalla("error");
+      setMensajeError('Este requisito ya está asociado a la vacante.');
+      setEstadoPantalla('error');
       return;
     }
 
-    actualizarVacante({
-      requisitos: [
-        ...vacante.requisitos,
-        { nombre, nivel, tipo },
-      ],
-    });
-
-    setRequisitoNuevo("");
+    actualizarVacante({ requisitos: [...vacante.requisitos, nombre] });
+    setRequisitoNuevo('');
   }
 
   function eliminarRequisito(nombre: string) {
+    if (!vacante) return;
     actualizarVacante({
       requisitos: vacante.requisitos.filter(
-        (r) => r.nombre !== nombre
+        (requisito) => requisito !== nombre,
       ),
     });
   }
 
-  function guardarCambios() {
-    const error = validarVacante(vacante);
+  async function guardarCambios() {
+    if (!vacante || !hayCambios) return;
+    const validationError = validarVacante(vacante);
 
-    if (error) {
-      setMensajeError(error);
-      setEstadoPantalla("error");
+    if (validationError) {
+      setMensajeError(validationError);
+      setEstadoPantalla('error');
       return;
     }
 
-    if (!hayCambios) return;
+    setEstadoPantalla('guardando');
+    setMensajeError('');
 
     try {
-      guardarDemostracion(vacante);
-      setOriginal({
-        ...vacante,
-        requisitos: [...vacante.requisitos],
-      });
-      setEstadoPantalla("guardado");
-      setMensajeError("");
-    } catch {
-      setMensajeError(
-        "No fue posible guardar los cambios en este navegador."
+      const persistida = await updateVacancy(
+        vacante.id,
+        crearPayloadActualizacion(vacante),
       );
-      setEstadoPantalla("error");
+      const editable = crearVacanteEditable(persistida);
+      setVacante(editable);
+      setOriginal(clonarVacante(editable));
+      setRequisitoNuevo('');
+      setEstadoPantalla('guardado');
+    } catch (error) {
+      setMensajeError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible actualizar la vacante.',
+      );
+      setEstadoPantalla('error');
     }
   }
 
   function descartarCambios() {
-    setVacante({
-      ...original,
-      requisitos: [...original.requisitos],
-    });
-    setRequisitoNuevo("");
-    setEstadoPantalla("inicial");
-    setMensajeError("");
+    if (!original) return;
+    setVacante(clonarVacante(original));
+    setRequisitoNuevo('');
+    setEstadoPantalla('inicial');
+    setMensajeError('');
+  }
+
+  if (estadoPantalla === 'cargando') {
+    return (
+      <main className="min-h-[calc(100vh-76px)] bg-[#f3efe7] px-5 py-12 text-slate-800">
+        <p role="status" className="mx-auto max-w-6xl text-sm text-slate-600">
+          Cargando datos de la vacante...
+        </p>
+      </main>
+    );
+  }
+
+  if (!vacante) {
+    return (
+      <main className="min-h-[calc(100vh-76px)] bg-[#f3efe7] px-5 py-12 text-slate-800">
+        <section className="mx-auto max-w-2xl rounded-lg border border-red-200 bg-white p-8 text-center">
+          <h1 className="text-xl font-bold">No se pudo cargar la vacante</h1>
+          <p role="alert" className="mt-3 text-sm text-red-700">
+            {mensajeError}
+          </p>
+          <Link
+            href="/vacantes"
+            className="mt-6 inline-flex rounded-md border border-stone-300 bg-white px-5 py-3 text-xs font-semibold"
+          >
+            Volver a vacantes
+          </Link>
+        </section>
+      </main>
+    );
   }
 
   return (
-    <main className="min-h-screen bg-[#f3efe7] text-slate-800">
-      <header className="bg-[#172838] px-6 py-4 text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-7">
-            <a href="/" className="text-lg font-black">
-              UMSS<span className="text-orange-400">PIRA</span>
-            </a>
-
-            <nav className="flex flex-wrap gap-5 text-xs">
-              <a href="/">Inicio</a>
-              <a href="/vacantes">Mis vacantes</a>
-              <span>Postulantes</span>
-              <span>Mi empresa</span>
-            </nav>
-          </div>
-
-          <div className="text-xs text-slate-300">
-            Administración de vacantes
-          </div>
-        </div>
-      </header>
-
+    <main className="min-h-[calc(100vh-76px)] bg-[#f3efe7] text-slate-800">
       <div className="mx-auto max-w-6xl px-5 py-9">
         <p className="text-xs text-slate-500">
           Mis vacantes / Detalles de vacante / Editar
         </p>
 
-        <h1 className="mt-3 text-2xl font-bold">
-          Editar vacante
-        </h1>
-
+        <h1 className="mt-3 text-2xl font-bold">Editar vacante</h1>
         <p className="mt-1 text-xs text-slate-500">
-          Actualiza los datos de la oportunidad y guarda los cambios.
+          Actualiza los datos persistidos de la oportunidad.
         </p>
 
-        {/* MOCKUP 2: ERROR DE VALIDACIÓN */}
-        {estadoPantalla === "error" && (
+        {estadoPantalla === 'error' ? (
           <div
             role="alert"
             className="mt-7 rounded-md border border-orange-300 bg-[#fff0df] px-5 py-4 text-xs text-orange-800"
           >
-            <p className="font-bold">! Cambios sin guardar</p>
+            <p className="font-bold">Cambios sin guardar</p>
             <p className="mt-1">{mensajeError}</p>
           </div>
-        )}
+        ) : null}
 
-        {/* MOCKUP 3: CAMBIOS PENDIENTES */}
-        {estadoPantalla === "pendiente" && (
+        {estadoPantalla === 'pendiente' ? (
           <div
             role="status"
             className="mt-7 rounded-md border border-orange-300 bg-[#fff0df] px-5 py-4 text-xs text-orange-800"
           >
-            <p className="font-bold">! Cambios pendientes</p>
-            <p className="mt-1">
-              Hay cambios sin guardar. Confirma y guarda los cambios.
-            </p>
+            <p className="font-bold">Cambios pendientes</p>
+            <p className="mt-1">Confirma y guarda los cambios.</p>
           </div>
-        )}
+        ) : null}
 
-        {/* MOCKUP 4: CAMBIOS GUARDADOS */}
-        {estadoPantalla === "guardado" && (
+        {estadoPantalla === 'guardado' ? (
           <div
             role="status"
             className="mt-7 rounded-md border border-emerald-300 bg-[#e5f4eb] px-5 py-4 text-xs text-emerald-800"
           >
-            <p className="font-bold">
-              ✓ Cambios guardados correctamente
-            </p>
+            <p className="font-bold">Cambios guardados correctamente</p>
             <p className="mt-1">
-              Los cambios se guardaron en la demostración local.
-              Todavía no se enviaron a Elasticsearch.
+              La vacante persistida y su documento de búsqueda están actualizados.
             </p>
           </div>
-        )}
+        ) : null}
 
-        {/* FORMULARIO PRINCIPAL */}
         <section className="mt-7 rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
-          <div className="mb-7 flex items-center justify-between">
-            <h2 className="text-sm font-bold">
-              Información editable
-            </h2>
-
+          <div className="mb-7 flex items-center justify-between gap-4">
+            <h2 className="text-sm font-bold">Información editable</h2>
             <span className="rounded-full bg-slate-100 px-4 py-1 text-xs text-slate-600">
-              Editando
+              {estadoPantalla === 'guardando' ? 'Guardando...' : 'Editando'}
             </span>
           </div>
 
@@ -235,100 +229,101 @@ export default function EditarVacanteForm({ id }: Props) {
               Nombre del cargo <span className="text-red-500">*</span>
               <input
                 className={estiloCampo}
-                value={vacante.nombre}
-                onChange={(e) =>
-                  actualizarVacante({ nombre: e.target.value })
+                maxLength={150}
+                value={vacante.titulo}
+                onChange={(event) =>
+                  actualizarVacante({ titulo: event.target.value })
                 }
               />
             </label>
 
             <label className={estiloEtiqueta}>
-              Estado <span className="text-red-500">*</span>
-              <select
+              Modalidad <span className="text-red-500">*</span>
+              <input
                 className={estiloCampo}
-                value={vacante.estado}
-                onChange={(e) =>
-                  actualizarVacante({
-                    estado: e.target.value as VacanteEditable["estado"],
-                  })
+                maxLength={50}
+                value={vacante.modalidad}
+                onChange={(event) =>
+                  actualizarVacante({ modalidad: event.target.value })
                 }
-              >
-                <option value="Disponible">Disponible</option>
-                <option value="No disponible">No disponible</option>
-              </select>
+              />
             </label>
 
             <label className={estiloEtiqueta}>
-              Código
+              Estado
               <input
                 className={`${estiloCampo} bg-stone-100`}
-                value={vacante.codigo}
+                value={vacante.estado}
                 readOnly
+              />
+              <span className="mt-1 block font-normal text-slate-400">
+                El catálogo oficial de estados se gestiona por separado.
+              </span>
+            </label>
+          </div>
+
+          <div className="mt-6 grid gap-5 md:grid-cols-2">
+            <label className={estiloEtiqueta}>
+              Ubicación <span className="text-red-500">*</span>
+              <input
+                className={estiloCampo}
+                maxLength={120}
+                value={vacante.ubicacion}
+                onChange={(event) =>
+                  actualizarVacante({ ubicacion: event.target.value })
+                }
+              />
+            </label>
+
+            <label className={estiloEtiqueta}>
+              Área <span className="text-red-500">*</span>
+              <input
+                className={estiloCampo}
+                maxLength={100}
+                value={vacante.area}
+                onChange={(event) =>
+                  actualizarVacante({ area: event.target.value })
+                }
               />
             </label>
           </div>
 
           <label className={`${estiloEtiqueta} mt-6`}>
-            Descripción breve <span className="text-red-500">*</span>
+            Descripción <span className="text-red-500">*</span>
             <textarea
-              rows={2}
-              maxLength={300}
+              rows={4}
+              maxLength={4000}
               className={estiloCampo}
               value={vacante.descripcion}
-              onChange={(e) =>
-                actualizarVacante({
-                  descripcion: e.target.value,
-                })
+              onChange={(event) =>
+                actualizarVacante({ descripcion: event.target.value })
               }
             />
-            <span className="mt-1 block font-normal text-slate-400">
-              Máximo 300 caracteres.
-            </span>
           </label>
 
-          <div className="mt-7 grid items-end gap-4 md:grid-cols-4">
-            <label className={estiloEtiqueta}>
+          <label className={`${estiloEtiqueta} mt-6`}>
+            Condiciones
+            <textarea
+              rows={3}
+              maxLength={2000}
+              className={estiloCampo}
+              value={vacante.condiciones}
+              onChange={(event) =>
+                actualizarVacante({ condiciones: event.target.value })
+              }
+            />
+          </label>
+
+          <div className="mt-7 flex items-end gap-4">
+            <label className={`${estiloEtiqueta} flex-1`}>
               Nuevo requisito <span className="text-red-500">*</span>
               <input
-                className={`${estiloCampo} ${
-                  estadoPantalla === "error"
-                    ? "border-red-500"
-                    : ""
-                }`}
+                className={estiloCampo}
+                maxLength={100}
                 placeholder="Ej. SQL"
                 value={requisitoNuevo}
-                onChange={(e) => setRequisitoNuevo(e.target.value)}
-                aria-invalid={estadoPantalla === "error"}
+                onChange={(event) => setRequisitoNuevo(event.target.value)}
               />
-            </label>
-
-            <label className={estiloEtiqueta}>
-              Nivel <span className="text-red-500">*</span>
-              <select
-                className={estiloCampo}
-                value={nivel}
-                onChange={(e) =>
-                  setNivel(e.target.value as RequisitoTecnico["nivel"])
-                }
-              >
-                <option>Básico</option>
-                <option>Intermedio</option>
-                <option>Avanzado</option>
-              </select>
-            </label>
-
-            <label className={estiloEtiqueta}>
-              Tipo <span className="text-red-500">*</span>
-              <select
-                className={estiloCampo}
-                value={tipo}
-                onChange={(e) =>
-                  setTipo(e.target.value as RequisitoTecnico["tipo"])
-                }
-              >
-                <option>Obligatorio</option>
-                <option>Deseable</option>
-              </select>
             </label>
 
             <button
@@ -340,38 +335,22 @@ export default function EditarVacanteForm({ id }: Props) {
             </button>
           </div>
 
-          {estadoPantalla === "error" && (
-            <p className="mt-2 text-xs text-red-600">
-              {mensajeError}
-            </p>
-          )}
-
           <div className="mt-7 flex flex-wrap items-center gap-3 rounded-md bg-[#f5f2ec] px-4 py-4">
-            <span className="mr-3 text-xs font-bold">
-              Requisitos actuales
-            </span>
-
-            {vacante.requisitos.length === 0 && (
+            <span className="mr-3 text-xs font-bold">Requisitos actuales</span>
+            {vacante.requisitos.length === 0 ? (
               <span className="text-xs text-red-600">
                 No hay requisitos registrados.
               </span>
-            )}
-
+            ) : null}
             {vacante.requisitos.map((requisito) => (
               <button
                 type="button"
-                key={requisito.nombre.toLowerCase()}
-                onClick={() =>
-                  eliminarRequisito(requisito.nombre)
-                }
-                title={`Quitar ${requisito.nombre}`}
-                className={`rounded-full px-4 py-1.5 text-xs font-medium ${
-                  requisito.tipo === "Deseable"
-                    ? "bg-orange-100 text-orange-700"
-                    : "bg-[#e5edf5] text-[#335875]"
-                }`}
+                key={requisito.toLowerCase()}
+                onClick={() => eliminarRequisito(requisito)}
+                title={`Quitar ${requisito}`}
+                className="rounded-full bg-[#e5edf5] px-4 py-1.5 text-xs font-medium text-[#335875]"
               >
-                {requisito.nombre} ×
+                {requisito} ×
               </button>
             ))}
           </div>
@@ -381,7 +360,7 @@ export default function EditarVacanteForm({ id }: Props) {
           <button
             type="button"
             onClick={descartarCambios}
-            disabled={!hayCambios}
+            disabled={!hayCambios || estadoPantalla === 'guardando'}
             className="rounded-md border border-stone-300 bg-white px-5 py-3 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-slate-400"
           >
             Descartar cambios
@@ -390,10 +369,12 @@ export default function EditarVacanteForm({ id }: Props) {
           <button
             type="button"
             onClick={guardarCambios}
-            disabled={!hayCambios}
+            disabled={!hayCambios || estadoPantalla === 'guardando'}
             className="rounded-md bg-orange-400 px-6 py-3 text-xs font-bold text-slate-900 hover:bg-orange-500 disabled:cursor-not-allowed disabled:bg-[#c9c2b3] disabled:text-white"
           >
-            Guardar cambios
+            {estadoPantalla === 'guardando'
+              ? 'Guardando cambios...'
+              : 'Guardar cambios'}
           </button>
         </div>
 

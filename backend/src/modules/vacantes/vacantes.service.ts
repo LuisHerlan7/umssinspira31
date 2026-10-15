@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { SupabaseService } from '../../config/supabase.service';
 import { CreateVacanteDto } from './dto/create-vacante.dto';
+import { UpdateVacanteDto } from './dto/update-vacante.dto';
 
 interface EmpresaRow {
   razon_social: string | null;
@@ -305,6 +306,39 @@ export class VacantesService {
     }
 
     return this.obtenerPorId(data);
+  }
+
+  async actualizar(id: string, dto: UpdateVacanteDto) {
+    const requisitos = this.normalizeRequirements(dto.requisitos);
+    const { data, error } = await this.db.rpc(
+      'actualizar_vacante_con_requisitos',
+      {
+        p_id_vacante: id,
+        p_titulo: dto.titulo.trim(),
+        p_modalidad: dto.modalidad.trim(),
+        p_descripcion: dto.descripcion.trim(),
+        p_ubicacion: dto.ubicacion.trim(),
+        p_area: dto.area.trim(),
+        p_condiciones: dto.condiciones.trim(),
+        p_requisitos: requisitos,
+      },
+    );
+
+    if (error) {
+      if ((error.message ?? '').includes('VACANTE_NO_EXISTE')) {
+        throw new NotFoundException('La vacante no existe.');
+      }
+
+      this.handleWriteError(error, 'No se pudo actualizar la vacante.');
+    }
+
+    if (data !== id) {
+      throw new InternalServerErrorException(
+        'No se pudo confirmar la actualización de la vacante.',
+      );
+    }
+
+    return this.obtenerPorId(id);
   }
 
   async obtenerPorId(id: string) {
