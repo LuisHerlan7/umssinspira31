@@ -15,8 +15,8 @@ import {
   X,
 } from 'lucide-react';
 import {
-  DEMO_VACANCIES,
   parseSavedVacancies,
+  getVacanciesIn,
 } from './vacancy-data';
 import {
   SERVER_STORAGE_SNAPSHOT,
@@ -67,7 +67,7 @@ export default function VacantesPage() {
   }, [snapshot]);
 
   const allVacancies = useMemo(
-    () => [...DEMO_VACANCIES, ...savedVacancies],
+    () => getVacanciesIn(savedVacancies),
     [savedVacancies],
   );
 
@@ -125,13 +125,21 @@ export default function VacantesPage() {
             </p>
           </div>
 
-          <Link
-            href="/vacantes/nueva"
-            className="inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg bg-[#ed9635] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#d98223] md:self-auto"
-          >
-            <Plus size={19} />
-            Registrar vacante
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/vacantes/disponibilidad"
+              className="inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg border border-[#17384b] bg-white px-5 py-3 text-sm font-bold text-[#17384b] transition hover:bg-[#edf1f3]"
+            >
+              Gestionar disponibilidad
+            </Link>
+            <Link
+              href="/vacantes/nueva"
+              className="inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg bg-[#ed9635] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#d98223] md:self-auto"
+            >
+              <Plus size={19} />
+              Registrar vacante
+            </Link>
+          </div>
         </div>
 
         <section className="mb-8 rounded-2xl border border-[#e7e0d4] bg-white p-5 shadow-sm sm:p-6">
