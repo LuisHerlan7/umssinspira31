@@ -2,25 +2,38 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import {
+  SUPABASE_CLIENT,
+  SUPABASE_DISABLED_MESSAGE,
+} from './supabase.constants';
 
 @Injectable()
 export class SupabaseService {
   private adminClient?: SupabaseClient;
 
   constructor(
-    @Inject('SUPABASE_CLIENT')
-    private readonly supabase: SupabaseClient,
+    @Inject(SUPABASE_CLIENT)
+    private readonly supabase: SupabaseClient | null,
     private readonly configService: ConfigService,
   ) {}
 
   getClient(): SupabaseClient {
+    if (!this.supabase) {
+      throw new ServiceUnavailableException(SUPABASE_DISABLED_MESSAGE);
+    }
+
     return this.supabase;
   }
 
   getAdminClient(): SupabaseClient {
+    if (!this.supabase) {
+      throw new ServiceUnavailableException(SUPABASE_DISABLED_MESSAGE);
+    }
+
     if (this.adminClient) {
       return this.adminClient;
     }
