@@ -1,33 +1,29 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useMemo, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
 ArrowLeft,
 BriefcaseBusiness,
 Building2,
-CheckCircle2,
 FileText,
 Send,
 ShieldCheck,
 } from 'lucide-react';
-
-const VACANCIES_KEY = 'umsspira-vacantes';
 const APPLICATIONS_KEY = 'umsspira-postulaciones';
-
-type Vacancy = {
-id: string | number;
-title: string;
-company: string;
-area: string;
-location: string;
-modality: string;
-description: string;
-requirements: string[];
-conditions?: string;
-createdAt?: string;
-};
+import {
+  findVacancy,
+  findVacancyIn,
+  parseSavedVacancies,
+  type Vacancy,
+} from '../../vacancy-data';
+import {
+  SERVER_STORAGE_SNAPSHOT,
+  STORAGE_READ_ERROR_SNAPSHOT,
+  readVacancySnapshot,
+  subscribeToLocalStorage,
+} from '../../storage';
 
 type Application = {
 id: string;
@@ -43,45 +39,6 @@ authorized: boolean;
 submittedAt: string;
 status: 'Postulación enviada';
 };
-
-const DEMO_VACANCIES: Vacancy[] = [
-{
-id: '1',
-title: 'Analista de Datos Junior',
-company: 'Empresa de Tecnología',
-area: 'Datos y Analítica',
-location: 'Cochabamba',
-modality: 'Híbrido',
-description:
-'Buscamos una persona interesada en analizar información, elaborar reportes y apoyar la toma de decisiones mediante el uso de datos.',
-requirements: ['SQL básico', 'Excel', 'Pensamiento analítico'],
-conditions: 'Jornada completa. Oportunidad de aprendizaje y crecimiento profesional.',
-},
-{
-id: '2',
-title: 'Desarrollador Frontend Junior',
-company: 'Empresa de Software',
-area: 'Desarrollo de Software',
-location: 'Bolivia',
-modality: 'Remoto',
-description:
-'Participarás en el desarrollo de interfaces web, trabajando junto al equipo de diseño y desarrollo para construir experiencias de usuario.',
-requirements: ['JavaScript', 'React', 'Git'],
-conditions: 'Trabajo remoto y colaboración con un equipo de desarrollo.',
-},
-{
-id: '3',
-title: 'Asistente de Soporte TI',
-company: 'Servicios Informáticos',
-area: 'Infraestructura y Soporte',
-location: 'Cochabamba',
-modality: 'Presencial',
-description:
-'Apoyarás en la atención de incidentes técnicos, mantenimiento de equipos y asistencia a usuarios.',
-requirements: ['Windows', 'Redes básicas', 'Atención al usuario'],
-conditions: 'Trabajo presencial. Capacitación inicial incluida.',
-},
-];
 
 function createApplicationCode(existing: Application[]) {
 const year = new Date().getFullYear();
@@ -103,8 +60,38 @@ export default function PostularVacanteCliente({
   const router = useRouter();
   const vacancyId = id;
 
-const [vacancy, setVacancy] = useState<Vacancy | null>(null);
-const [loaded, setLoaded] = useState(false);
+const snapshot = useSyncExternalStore(
+  subscribeToLocalStorage,
+  readVacancySnapshot,
+  () => SERVER_STORAGE_SNAPSHOT,
+);
+const { vacancy, loaded, loadError } = useMemo(() => {
+  if (snapshot === SERVER_STORAGE_SNAPSHOT) {
+    return { vacancy: null, loaded: false, loadError: '' };
+  }
+
+  if (snapshot === STORAGE_READ_ERROR_SNAPSHOT) {
+    return {
+      vacancy: null,
+      loaded: true,
+      loadError: 'No se pudo acceder al almacenamiento local del navegador.',
+    };
+  }
+
+  try {
+    return {
+      vacancy: findVacancyIn(vacancyId, parseSavedVacancies(snapshot)) ?? null,
+      loaded: true,
+      loadError: '',
+    };
+  } catch {
+    return {
+      vacancy: null,
+      loaded: true,
+      loadError: 'No se pudieron leer las vacantes guardadas en este navegador.',
+    };
+  }
+}, [snapshot, vacancyId]);
 const [name, setName] = useState('');
 const [email, setEmail] = useState('');
 const [phone, setPhone] = useState('');
@@ -112,32 +99,6 @@ const [motivation, setMotivation] = useState('');
 const [authorized, setAuthorized] = useState(false);
 const [errors, setErrors] = useState<string[]>([]);
 const [saveError, setSaveError] = useState('');
-
-useEffect(() => {
-try {
-const savedVacancies = localStorage.getItem(VACANCIES_KEY);
-const parsedVacancies: Vacancy[] = savedVacancies
-? JSON.parse(savedVacancies)
-: [];
-
-  const allVacancies = [
-    ...DEMO_VACANCIES,
-    ...(Array.isArray(parsedVacancies) ? parsedVacancies : []),
-  ];
-
-  setVacancy(
-    allVacancies.find((item) => String(item.id) === vacancyId) ?? null,
-  );
-} catch {
-  setVacancy(
-    DEMO_VACANCIES.find((item) => String(item.id) === vacancyId) ?? null,
-  );
-} finally {
-  setLoaded(true);
-}
-
-
-}, [vacancyId]);
 
 const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 event.preventDefault();
@@ -174,6 +135,21 @@ if (newErrors.length > 0) {
   return;
 }
 
+let currentVacancy: Vacancy | undefined;
+try {
+  currentVacancy = findVacancy(vacancyId);
+} catch {
+  setSaveError(
+    'No se pudo verificar la disponibilidad de esta vacante. Inténtalo de nuevo.',
+  );
+  return;
+}
+
+if (!currentVacancy) {
+  setErrors(['Esta vacante ya no está disponible para postulaciones.']);
+  return;
+}
+
 try {
   const savedApplications = localStorage.getItem(APPLICATIONS_KEY);
   const parsed: unknown = savedApplications
@@ -203,8 +179,8 @@ try {
     id: `app-${Date.now()}`,
     code: createApplicationCode(applications),
     vacancyId,
-    vacancyTitle: vacancy!.title,
-    company: vacancy!.company,
+    vacancyTitle: currentVacancy.title,
+    company: currentVacancy.company,
     applicantName: name.trim(),
     email: email.trim(),
     phone: phone.trim(),
@@ -237,7 +213,7 @@ return ( <main className="min-h-screen bg-[#f1eee4] px-5 py-10"> <p className="t
 }
 
 if (!vacancy) {
-return ( <main className="min-h-screen bg-[#f1eee4] px-5 py-10"> <div className="mx-auto max-w-2xl rounded-lg bg-white p-8 text-center shadow-sm"> <h1 className="text-2xl font-bold text-gray-800">Vacante no encontrada</h1> <Link
+return ( <main className="min-h-screen bg-[#f1eee4] px-5 py-10"> <div className="mx-auto max-w-2xl rounded-lg bg-white p-8 text-center shadow-sm"> <h1 className="text-2xl font-bold text-gray-800">{loadError ? 'No se puede postular a esta vacante' : 'Vacante no encontrada'}</h1> <p role={loadError ? 'alert' : undefined} className="mt-3 text-sm text-gray-600">{loadError || 'Es posible que la vacante no exista o ya no esté disponible.'}</p> <Link
          href="/vacantes"
          className="mt-5 inline-flex items-center gap-2 rounded-md bg-orange-400 px-4 py-3 font-semibold text-white"
        > <ArrowLeft size={17} /> Volver a vacantes </Link> </div> </main>

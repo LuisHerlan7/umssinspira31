@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, BriefcaseBusiness, Save } from 'lucide-react';
+import type { Vacancy } from '../vacancy-data';
 
 const STORAGE_KEY = 'umsspira-vacantes';
 
@@ -15,19 +16,6 @@ const AREAS = [
 'Gestión de Proyectos',
 'Otra área',
 ];
-
-type Vacancy = {
-id: string;
-title: string;
-company: string;
-area: string;
-location: string;
-modality: string;
-description: string;
-requirements: string[];
-conditions: string;
-createdAt: string;
-};
 
 export default function NuevaVacantePage() {
 const router = useRouter();
@@ -87,6 +75,7 @@ const vacancy: Vacancy = {
     .filter(Boolean),
   conditions: conditions.trim(),
   createdAt: new Date().toISOString(),
+  availability: 'available',
 };
 
 try {
