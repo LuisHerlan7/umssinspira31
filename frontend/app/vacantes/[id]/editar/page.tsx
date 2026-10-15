@@ -1,11 +1,13 @@
-"use client";
-
-import { useParams } from "next/navigation";
 import EditarVacanteForm from "./EditarVacanteForm";
 
-export default function EditarVacantePage() {
-  const params = useParams();
-  const id = String(params.id ?? "");
+export const instant = false;
+
+export default async function EditarVacantePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
 
   if (!id) {
     return (
