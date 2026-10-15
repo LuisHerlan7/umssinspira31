@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense } from 'react';
@@ -42,12 +41,11 @@ function NavigationLinks({ pathname }: { pathname?: string | null }) {
   });
 }
 
-function ActiveNavigationLinks() {
-  const pathname = usePathname();
-  return <NavigationLinks pathname={pathname} />;
-}
+function HeaderBar({ pathname }: { pathname?: string | null }) {
+  if (pathname?.includes('/requisitos')) {
+    return null;
+  }
 
-export default function PortalHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#e7e0d4] bg-white">
       <div className="mx-auto flex min-h-[76px] max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-3 sm:px-8">
@@ -70,9 +68,7 @@ export default function PortalHeader() {
           aria-label="Navegación principal"
           className="flex flex-wrap items-center gap-1 sm:gap-2"
         >
-          <Suspense fallback={<NavigationLinks />}>
-            <ActiveNavigationLinks />
-          </Suspense>
+          <NavigationLinks pathname={pathname} />
         </nav>
 
         <div className="hidden items-center gap-3 border-l border-gray-200 pl-4 md:flex">
@@ -90,5 +86,18 @@ export default function PortalHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+function DynamicHeader() {
+  const pathname = usePathname();
+  return <HeaderBar pathname={pathname} />;
+}
+
+export default function PortalHeader() {
+  return (
+    <Suspense fallback={<HeaderBar pathname={null} />}>
+      <DynamicHeader />
+    </Suspense>
   );
 }

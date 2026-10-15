@@ -102,8 +102,11 @@ try {
     JSON.stringify([...vacancies, vacancy]),
   );
 
-  router.push('/vacantes');
+  router.push(
+    `/vacantes/nueva/requisitos?id=${vacancy.id}&titulo=${encodeURIComponent(vacancy.title)}`,
+  );
   router.refresh();
+
 } catch {
   setSaveError(
     'No se pudo guardar la vacante en este navegador. Comprueba el almacenamiento disponible e inténtalo de nuevo.',

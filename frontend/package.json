@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:vacancies": "node --test --experimental-transform-types lib/vacancies/client.spec.mts"
+    "test:vacancies": "node --test --experimental-transform-types lib/vacancies/client.spec.mts",
+    "test:requirements": "node --test --experimental-transform-types lib/vacancies/technical-requirements-client.spec.mts",
+    "test": "node --test --experimental-transform-types lib/vacancies/client.spec.mts lib/vacancies/technical-requirements-client.spec.mts"
+
   },
   "dependencies": {
     "lucide-react": "^1.55.0",

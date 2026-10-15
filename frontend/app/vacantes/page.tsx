@@ -125,13 +125,22 @@ export default function VacantesPage() {
             </p>
           </div>
 
-          <Link
-            href="/vacantes/nueva"
-            className="inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg bg-[#ed9635] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#d98223] md:self-auto"
-          >
-            <Plus size={19} />
-            Registrar vacante
-          </Link>
+          <div className="flex flex-wrap gap-3 self-start md:self-auto">
+            <Link
+              href="/vacantes/nueva/requisitos"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#ed9635] bg-white px-4 py-3 text-sm font-bold text-[#ed9635] shadow-sm transition hover:bg-orange-50"
+            >
+              Requisitos técnicos
+            </Link>
+            <Link
+              href="/vacantes/nueva"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#ed9635] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#d98223]"
+            >
+              <Plus size={19} />
+              Registrar vacante
+            </Link>
+          </div>
+
         </div>
 
         <section className="mb-8 rounded-2xl border border-[#e7e0d4] bg-white p-5 shadow-sm sm:p-6">
@@ -361,17 +370,27 @@ export default function VacantesPage() {
                   )}
 
                   <div className="mt-auto border-t border-[#eee9df] pt-4">
-                    <Link
-                      href={`/vacantes/${vacancy.id}`}
-                      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#17384b] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#234b60]"
-                    >
-                      Ver detalle de la vacante
-                      <ArrowRight
-                        size={17}
-                        className="transition-transform group-hover:translate-x-1"
-                      />
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/vacantes/${vacancy.id}`}
+                        className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[#17384b] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#234b60]"
+                      >
+                        Ver detalle
+                        <ArrowRight
+                          size={17}
+                          className="transition-transform group-hover:translate-x-1"
+                        />
+                      </Link>
+                      <Link
+                        href={`/vacantes/${vacancy.id}/requisitos`}
+                        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-3 text-xs font-semibold text-gray-700 hover:border-[#ed9635] hover:text-[#ed9635] transition shadow-xs"
+                        title="Requisitos técnicos"
+                      >
+                        Requisitos
+                      </Link>
+                    </div>
                   </div>
+
                 </div>
               </article>
             ))}
