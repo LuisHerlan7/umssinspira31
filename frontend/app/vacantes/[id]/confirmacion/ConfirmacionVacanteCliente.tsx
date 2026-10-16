@@ -100,7 +100,7 @@ export default function ConfirmacionVacanteCliente({ id }: { id: string }) {
           <div>
             <h2 className="text-sm font-bold">Vacante guardada correctamente</h2>
             <p className="mt-1 text-[11px] font-medium">
-              La información de “{vacancy.titulo}” quedó registrada y puede consultarse nuevamente.
+              La información de “{vacancy.titulo}” quedó registrada y puede seguir editándose.
             </p>
           </div>
         </section>
@@ -163,7 +163,7 @@ export default function ConfirmacionVacanteCliente({ id }: { id: string }) {
           <aside className="flex min-h-[420px] flex-col rounded-2xl bg-[#2c3b4d] p-7 text-white lg:min-h-[528px]">
             <h2 className="text-xl font-bold">¿Qué puede hacer ahora?</h2>
             <p className="mt-3 text-xs text-[#c9c1b1]">
-              Consulta o revisa la información de esta vacante.
+              Consulta o modifica la información de esta vacante.
             </p>
             <ul className="mt-10 space-y-6 text-xs text-[#c9c1b1]">
               {[
@@ -179,7 +179,7 @@ export default function ConfirmacionVacanteCliente({ id }: { id: string }) {
             </ul>
             <div className="mt-auto space-y-3 pt-10">
               <Link
-                href={`/vacantes/${encodeURIComponent(vacancy.id)}`}
+                href={`/vacantes/${encodeURIComponent(vacancy.id)}/editar`}
                 className="flex min-h-11 items-center justify-center rounded-lg bg-[#ffb162] px-4 text-[13px] font-semibold text-[#1b2632] hover:bg-[#f2a455]"
               >
                 Editar vacante

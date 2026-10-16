@@ -32,6 +32,8 @@ interface VacanteRow {
   ubicacion: string | null;
   area: string | null;
   condiciones: string | null;
+  disponible: boolean | null;
+  disponibilidad_actualizada_at: string | null;
   empresa: EmpresaRow | EmpresaRow[] | null;
   vacante_requerimiento_laboral: VacanteRequerimientoRow[] | null;
 }
@@ -54,6 +56,8 @@ const VACANTE_SELECT = `
   ubicacion,
   area,
   condiciones,
+  disponible,
+  disponibilidad_actualizada_at,
   empresa!fk_vacante_empresa(razon_social),
   vacante_requerimiento_laboral(
     requerimiento_laboral!fk_vac_req_requerimiento(
@@ -97,6 +101,8 @@ export class VacantesService {
       ubicacion: row.ubicacion ?? '',
       area: row.area ?? '',
       condiciones: row.condiciones ?? '',
+      disponible: row.disponible ?? true,
+      disponibilidadActualizadaAt: row.disponibilidad_actualizada_at,
       requisitos: this.mapRequirements(row.vacante_requerimiento_laboral),
     };
   }
@@ -187,6 +193,8 @@ export class VacantesService {
   }
 
   private estaDisponible(vacante: FilaVacante): boolean {
+    if (vacante.disponible === false) return false;
+
     const estado = this.obtenerValor(vacante, [
       'estado',
       'estado_vacante',
@@ -338,6 +346,31 @@ export class VacantesService {
       );
     }
 
+    return this.obtenerPorId(id);
+  }
+
+  async actualizarDisponibilidad(id: string, disponible: boolean) {
+    const { data, error } = await this.adminDb
+      .from('vacante')
+      .update({
+        disponible,
+        disponibilidad_actualizada_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('id')
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException(
+        'No se pudo actualizar la disponibilidad de la vacante.',
+      );
+    }
+
+    if (!data) {
+      throw new NotFoundException('La vacante no existe.');
+    }
+
+    // La versión vigente se vuelve a leer antes de indexar.
     return this.obtenerPorId(id);
   }
 

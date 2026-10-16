@@ -15,6 +15,8 @@ export type Vacancy = {
   ubicacion: string;
   area: string;
   condiciones: string;
+  disponible: boolean;
+  disponibilidadActualizadaAt: string | null;
   requisitos: VacancyRequirement[];
 };
 
@@ -116,6 +118,16 @@ export function searchIndexedVacancies(query: string, signal?: AbortSignal) {
 export function listVacancies(idEmpresa: string) {
   const query = new URLSearchParams({ idEmpresa });
   return request<Vacancy[]>(`/vacantes?${query.toString()}`);
+}
+
+export function updateVacancyAvailability(id: string, disponible: boolean) {
+  return request<Vacancy>(
+    `/vacantes/${encodeURIComponent(id)}/disponibilidad`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ disponible }),
+    },
+  );
 }
 
 export function isVacancyAvailable(status: string) {

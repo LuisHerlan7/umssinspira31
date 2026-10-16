@@ -17,6 +17,8 @@ export type VacancyIndexDocument = {
   ubicacion: string;
   area: string;
   condiciones: string;
+  disponible: boolean;
+  disponibilidadActualizadaAt: string | null;
   requisitos: VacancyIndexRequirement[];
 };
 
@@ -33,6 +35,8 @@ export const VACANCY_INDEX_MAPPINGS = {
     ubicacion: { type: 'text' },
     area: { type: 'text' },
     condiciones: { type: 'text' },
+    disponible: { type: 'boolean' },
+    disponibilidadActualizadaAt: { type: 'date' },
     requisitos: {
       type: 'nested',
       properties: {

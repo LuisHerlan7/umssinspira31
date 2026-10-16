@@ -20,9 +20,9 @@ type Props = {
 };
 
 const estiloCampo =
-  'mt-2 w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-orange-400';
+  'mt-2 h-[46px] w-full rounded-[7px] border border-[#ddd6c8] bg-white px-[14px] text-[13px] text-[#1b2632] outline-none focus:border-[#ffb162]';
 
-const estiloEtiqueta = 'block text-xs font-semibold text-slate-700';
+const estiloEtiqueta = 'block text-[11px] font-semibold text-[#1b2632]';
 
 function clonarVacante(vacante: VacanteEditable): VacanteEditable {
   return { ...vacante, requisitos: [...vacante.requisitos] };
@@ -173,15 +173,15 @@ export default function EditarVacanteForm({ id }: Props) {
   }
 
   return (
-    <main className="min-h-[calc(100vh-76px)] bg-[#f3efe7] text-slate-800">
-      <div className="mx-auto max-w-6xl px-5 py-9">
+    <main className="min-h-[calc(100vh-84px)] bg-[#eee9df] text-[#1b2632]">
+      <div className="mx-auto max-w-[1440px] px-5 pb-4 pt-5 sm:px-8 lg:px-14">
         <p className="text-xs text-slate-500">
           Mis vacantes / Detalles de vacante / Editar
         </p>
 
-        <h1 className="mt-3 text-2xl font-bold">Editar vacante</h1>
-        <p className="mt-1 text-xs text-slate-500">
-          Actualiza los datos persistidos de la oportunidad.
+        <h1 className="mt-6 text-[30px] font-bold leading-none">Editar vacante</h1>
+        <p className="mt-3 text-sm text-[#6e7880]">
+          Actualiza los datos de la oportunidad y guarda los cambios.
         </p>
 
         {estadoPantalla === 'error' ? (
@@ -216,9 +216,9 @@ export default function EditarVacanteForm({ id }: Props) {
           </div>
         ) : null}
 
-        <section className="mt-7 rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
-          <div className="mb-7 flex items-center justify-between gap-4">
-            <h2 className="text-sm font-bold">Información editable</h2>
+        <section className="mt-16 rounded-2xl border border-[#ddd6c8] bg-white p-5 sm:mt-[118px] sm:p-7">
+          <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
+            <h2 className="text-xl font-bold">Información editable</h2>
             <span className="rounded-full bg-slate-100 px-4 py-1 text-xs text-slate-600">
               {estadoPantalla === 'guardando' ? 'Guardando...' : 'Editando'}
             </span>
@@ -314,7 +314,7 @@ export default function EditarVacanteForm({ id }: Props) {
             />
           </label>
 
-          <div className="mt-7 flex items-end gap-4">
+          <div className="mt-7 flex flex-col gap-4 sm:flex-row sm:items-end">
             <label className={`${estiloEtiqueta} flex-1`}>
               Nuevo requisito <span className="text-red-500">*</span>
               <input
@@ -329,7 +329,7 @@ export default function EditarVacanteForm({ id }: Props) {
             <button
               type="button"
               onClick={agregarRequisito}
-              className="rounded-md bg-[#c9c2b3] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#aea594]"
+              className="h-[46px] w-full rounded-md bg-[#c9c2b3] px-5 text-sm font-semibold text-white hover:bg-[#aea594] sm:w-auto"
             >
               Agregar
             </button>
@@ -356,7 +356,7 @@ export default function EditarVacanteForm({ id }: Props) {
           </div>
         </section>
 
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
           <button
             type="button"
             onClick={descartarCambios}

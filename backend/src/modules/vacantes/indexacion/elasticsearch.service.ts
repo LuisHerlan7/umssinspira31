@@ -74,9 +74,21 @@ export class ElasticsearchService {
       const response = await this.getClient().search<VacancyIndexDocument>({
         index: this.indexName,
         size: 100,
-        query: normalizedQuery
-          ? {
-              bool: {
+        query: {
+          bool: {
+            filter: [
+              {
+                bool: {
+                  should: [
+                    { term: { disponible: true } },
+                    { bool: { must_not: [{ exists: { field: 'disponible' } }] } },
+                  ],
+                  minimum_should_match: 1,
+                },
+              },
+            ],
+            ...(normalizedQuery
+              ? {
                 should: [
                   { term: { id: normalizedQuery } },
                   {
@@ -86,9 +98,10 @@ export class ElasticsearchService {
                   },
                 ],
                 minimum_should_match: 1,
-              },
-            }
-          : { match_all: {} },
+              }
+              : {}),
+          },
+        },
       });
 
       return response.hits.hits.flatMap((hit) =>

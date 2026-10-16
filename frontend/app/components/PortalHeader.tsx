@@ -8,7 +8,7 @@ import { usePathname } from 'next/navigation';
 import {
   Bell,
   ChevronDown,
-  GraduationCap,
+  Menu,
   Search,
 } from 'lucide-react';
 
@@ -127,24 +127,24 @@ function CompanyHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#2c3b4d] bg-[#1b2632] text-[#eee9df]">
       <div className="mx-auto flex min-h-[84px] max-w-[1440px] items-center gap-6 px-5 sm:px-8 lg:px-5">
-        <Link href="/mis-vacantes" className="flex shrink-0 items-center gap-2">
-          <GraduationCap size={30} className="text-[#ffb162]" aria-hidden="true" />
-          <span className="text-lg font-black tracking-tight">
-            UMSS<span className="text-[#ff9f43]">PIRA</span>
-          </span>
+        <Link href="/mis-vacantes" className="flex w-[170px] shrink-0 items-center">
+          <Image src="/hu04/header-logo.png" alt="UMSSPIRA" width={170} height={56} priority className="h-auto w-[170px]" />
         </Link>
 
         <nav aria-label="Navegación de empresa" className="hidden items-stretch self-stretch md:flex">
           <Link href="/" className="flex items-center px-3 text-sm font-medium hover:text-white">
             Inicio
           </Link>
-          <Link
-            href="/mis-vacantes"
-            aria-current="page"
-            className="flex items-center border-b-[3px] border-[#ffb162] px-3 text-sm font-medium"
-          >
-            Mis vacantes
-          </Link>
+          <details className="group relative flex self-stretch open:[&_summary]:border-[#ffb162]">
+            <summary className="flex h-full cursor-pointer list-none items-center border-b-[3px] border-[#ffb162] px-3 text-sm font-medium">
+              Mis vacantes
+            </summary>
+            <div className="absolute left-0 top-[84px] z-[70] w-[236px] rounded-b-[10px] border border-[#ddd6c8] bg-white p-[15px] text-[#1b2632] shadow-[0_8px_11px_rgba(0,0,0,.16)]">
+              <Link href="/mis-vacantes" className="block border-b border-[#ddd6c8] px-0.5 pb-3 text-[13px] font-semibold">Mis vacantes</Link>
+              <Link href="/vacantes/nueva" className="block border-b border-[#ddd6c8] px-0.5 py-3 text-[13px] font-medium">Registrar vacante</Link>
+              <Link href="/vacantes/disponibilidad" className="block px-0.5 pt-3 text-[13px] font-medium">Disponibilidad</Link>
+            </div>
+          </details>
           <Link href="/postulaciones" className="flex items-center px-3 text-sm font-medium hover:text-white">
             Postulantes
           </Link>
@@ -152,6 +152,19 @@ function CompanyHeader() {
             Mi empresa
           </span>
         </nav>
+
+        <details className="relative ml-auto md:hidden">
+          <summary aria-label="Abrir navegación" className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-lg border border-[#2c3b4d]">
+            <Menu size={22} />
+          </summary>
+          <nav aria-label="Navegación móvil de empresa" className="absolute right-0 top-[52px] z-[70] w-[230px] rounded-[10px] border border-[#ddd6c8] bg-white p-2 text-[#1b2632] shadow-[0_8px_20px_rgba(0,0,0,.2)]">
+            <Link href="/" className="block rounded-md px-3 py-3 text-sm font-medium hover:bg-[#f8f5ef]">Inicio</Link>
+            <Link href="/mis-vacantes" className="block rounded-md px-3 py-3 text-sm font-medium hover:bg-[#f8f5ef]">Mis vacantes</Link>
+            <Link href="/vacantes/nueva" className="block rounded-md px-3 py-3 text-sm font-medium hover:bg-[#f8f5ef]">Registrar vacante</Link>
+            <Link href="/vacantes/disponibilidad" className="block rounded-md px-3 py-3 text-sm font-medium hover:bg-[#f8f5ef]">Disponibilidad</Link>
+            <Link href="/postulaciones" className="block rounded-md px-3 py-3 text-sm font-medium hover:bg-[#f8f5ef]">Postulantes</Link>
+          </nav>
+        </details>
 
         <div className="ml-auto hidden items-center gap-2 lg:flex">
           <span className="flex h-11 w-11 items-center justify-center" aria-label="Buscar">
@@ -225,7 +238,16 @@ function JobsHeader({ pathname }: { pathname: string }) {
           })}
         </nav>
 
-        <div className="ml-auto hidden items-center gap-1 md:flex">
+        <details className="relative ml-auto lg:hidden">
+          <summary aria-label="Abrir navegación" className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-lg border border-[#2c3b4d]">
+            <Menu size={22} />
+          </summary>
+          <nav aria-label="Navegación móvil principal" className="absolute right-0 top-[52px] z-[70] w-[230px] rounded-[10px] border border-[#ddd6c8] bg-white p-2 text-[#1b2632] shadow-[0_8px_20px_rgba(0,0,0,.2)]">
+            {jobsNavigation.map((item) => item.href ? <Link key={item.label} href={item.href} className="block rounded-md px-3 py-3 text-sm font-medium hover:bg-[#f8f5ef]">{item.label}</Link> : <span key={item.label} className="block px-3 py-3 text-sm text-[#6e7880]">{item.label}</span>)}
+          </nav>
+        </details>
+
+        <div className="ml-auto hidden items-center gap-1 lg:flex">
           <span className="flex h-11 w-11 items-center justify-center" aria-label="Buscar">
             <Search size={19} />
           </span>
@@ -258,6 +280,9 @@ function RoutedHeader() {
   const pathname = usePathname();
   const isCompanyRoute =
     pathname === '/mis-vacantes' ||
+    pathname === '/vacantes/nueva' ||
+    pathname === '/vacantes/disponibilidad' ||
+    /^\/vacantes\/[^/]+\/editar$/.test(pathname) ||
     /^\/vacantes\/[^/]+\/confirmacion$/.test(pathname);
 
   const isJobsRoute =

@@ -1,102 +1,91 @@
 'use client';
 
-import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import VacancyAdminFooter from '../components/VacancyAdminFooter';
 import {
-  Building2,
-  CheckCircle2,
-  Clock3,
-  Search,
-  X,
-} from 'lucide-react';
-import {
-  getVacanciesIn,
-  parseSavedVacancies,
+  configuredCompanyId,
+  listVacancies,
   updateVacancyAvailability,
   type Vacancy,
-} from '../vacancy-data';
-import {
-  SERVER_STORAGE_SNAPSHOT,
-  STORAGE_READ_ERROR_SNAPSHOT,
-  readVacancySnapshot,
-  subscribeToLocalStorage,
-} from '../storage';
+} from '../../../lib/api/vacantes';
 
 type AvailabilityFilter = 'all' | 'available' | 'unavailable';
 
 export default function DisponibilidadVacantesPage() {
-  const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<AvailabilityFilter>('all');
   const [selectedVacancy, setSelectedVacancy] = useState<Vacancy | null>(null);
   const [notice, setNotice] = useState('');
   const [mutationError, setMutationError] = useState('');
-  const snapshot = useSyncExternalStore(
-    subscribeToLocalStorage,
-    readVacancySnapshot,
-    () => SERVER_STORAGE_SNAPSHOT,
-  );
+  const [vacancies, setVacancies] = useState<Vacancy[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [mutating, setMutating] = useState(false);
 
-  const { vacancies, loaded, loadError } = useMemo(() => {
-    if (snapshot === SERVER_STORAGE_SNAPSHOT) {
-      return { vacancies: [], loaded: false, loadError: '' };
+  useEffect(() => {
+    let active = true;
+
+    if (!configuredCompanyId) {
+      setLoadError('No se configuró la empresa cuyas vacantes deben consultarse.');
+      setLoaded(true);
+      return;
     }
 
-    if (snapshot === STORAGE_READ_ERROR_SNAPSHOT) {
-      return {
-        vacancies: [],
-        loaded: true,
-        loadError: 'No se pudo acceder al almacenamiento local del navegador.',
-      };
-    }
+    listVacancies(configuredCompanyId)
+      .then((data) => {
+        if (active) setVacancies(data);
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : 'No se pudieron consultar las vacantes.',
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoaded(true);
+      });
 
-    try {
-      return {
-        vacancies: getVacanciesIn(parseSavedVacancies(snapshot), {
-          includeUnavailable: true,
-        }),
-        loaded: true,
-        loadError: '',
-      };
-    } catch {
-      return {
-        vacancies: [],
-        loaded: true,
-        loadError: 'No se pudieron leer las vacantes guardadas en este navegador.',
-      };
-    }
-  }, [snapshot]);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const activeVacancies = vacancies.filter(
-    (vacancy) => vacancy.availability !== 'unavailable',
+    (vacancy) => vacancy.disponible,
   );
   const unavailableVacancies = vacancies.filter(
-    (vacancy) => vacancy.availability === 'unavailable',
+    (vacancy) => !vacancy.disponible,
   );
-  const normalizedSearch = search.trim().toLocaleLowerCase('es');
   const filteredVacancies = vacancies.filter((vacancy) => {
-    const matchesSearch = `${vacancy.title} ${vacancy.company} ${vacancy.id}`
-      .toLocaleLowerCase('es')
-      .includes(normalizedSearch);
     const matchesAvailability =
       filter === 'all' ||
-      (filter === 'available' && vacancy.availability !== 'unavailable') ||
-      (filter === 'unavailable' && vacancy.availability === 'unavailable');
+      (filter === 'available' && vacancy.disponible) ||
+      (filter === 'unavailable' && !vacancy.disponible);
 
-    return matchesSearch && matchesAvailability;
+    return matchesAvailability;
   });
 
-  const confirmAvailabilityChange = () => {
+  const confirmAvailabilityChange = async () => {
     if (!selectedVacancy) return;
 
-    const nextAvailability =
-      selectedVacancy.availability === 'unavailable'
-        ? 'available'
-        : 'unavailable';
+    const nextAvailability = !selectedVacancy.disponible;
 
     try {
-      updateVacancyAvailability(String(selectedVacancy.id), nextAvailability);
+      setMutating(true);
+      const updated = await updateVacancyAvailability(
+        selectedVacancy.id,
+        nextAvailability,
+      );
+      setVacancies((current) =>
+        current.map((vacancy) =>
+          vacancy.id === updated.id ? updated : vacancy,
+        ),
+      );
       setNotice(
-        nextAvailability === 'available'
+        nextAvailability
           ? 'La vacante fue reactivada y volvió al conjunto activo.'
           : 'La vacante se marcó como no disponible. Su registro se conserva.',
       );
@@ -108,41 +97,29 @@ export default function DisponibilidadVacantesPage() {
           ? error.message
           : 'No se pudo actualizar la disponibilidad de la vacante.',
       );
+    } finally {
+      setMutating(false);
     }
   };
 
-  const clearSearch = () => setSearch('');
-
   return (
-    <main className="min-h-screen bg-[#f3efe5] px-5 py-8 text-[#17384b] sm:px-8 lg:py-10">
-      <div className="mx-auto max-w-7xl">
-        <nav aria-label="Ruta de navegación" className="mb-6 text-sm text-gray-600">
-          <Link href="/vacantes" className="hover:underline">
-            Vacantes
-          </Link>
-          <span aria-hidden="true" className="mx-2">/</span>
-          <span aria-current="page" className="font-semibold text-[#17384b]">
-            Disponibilidad
-          </span>
+    <div className="min-h-[calc(100vh-84px)] bg-[#eee9df] text-[#1b2632]">
+      <main className="mx-auto min-h-[890px] max-w-[1440px] px-5 pb-16 pt-5 sm:px-8 lg:px-14">
+        <nav aria-label="Ruta de navegación" className="text-xs text-[#7a858d]">
+          <Link href="/mis-vacantes" className="hover:underline">Mis vacantes</Link>
+          <span aria-hidden="true"> / </span>
+          <span aria-current="page" className="font-medium text-[#1b2632]">Disponibilidad</span>
         </nav>
 
-        <header className="mb-7">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[#bd7627]">
-            UMSSPIRA / Gestión de vacantes
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Disponibilidad de vacantes
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600 sm:text-base">
-            Administra qué oportunidades permanecen visibles y habilitadas para
-            consultas y postulaciones.
-          </p>
+        <header className="mt-6">
+          <h1 className="text-[30px] font-bold leading-none">Disponibilidad de vacantes</h1>
+          <p className="mt-3 text-sm text-[#6e7880]">Administra el estado de tus oportunidades laborales.</p>
         </header>
 
         {notice && (
           <p
             role="status"
-            className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+            className="mt-5 rounded-[10px] border border-[#2f7a5d] bg-[#e7f3ed] px-5 py-4 text-sm font-medium text-[#2f7a5d]"
           >
             {notice}
           </p>
@@ -151,17 +128,14 @@ export default function DisponibilidadVacantesPage() {
         {mutationError && (
           <p
             role="alert"
-            className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            className="mt-5 rounded-[10px] border border-[#a35139] bg-[#fff0db] px-5 py-4 text-sm text-[#a35139]"
           >
             {mutationError}
           </p>
         )}
 
-        <section
-          aria-label="Resumen de vacantes"
-          className="mb-5 grid gap-3 sm:grid-cols-3"
-        >
-          <SummaryCard label="Total de vacantes" value={vacancies.length} />
+        <section aria-label="Resumen de vacantes" className="mt-[84px] grid gap-4 sm:grid-cols-3 xl:grid-cols-[220px_220px_220px_1fr] xl:gap-6">
+          <SummaryCard label="Registradas" value={vacancies.length} />
           <SummaryCard
             label="Disponibles"
             value={activeVacancies.length}
@@ -172,73 +146,28 @@ export default function DisponibilidadVacantesPage() {
             value={unavailableVacancies.length}
             tone="amber"
           />
+          <aside className="flex min-h-[94px] flex-col justify-center rounded-[14px] bg-[#2c3b4d] px-6 text-white sm:col-span-3 xl:col-span-1">
+            <h2 className="text-[13px] font-bold">Visibilidad en la bolsa</h2>
+            <p className="mt-3 text-xs font-medium text-[#c9c1b1]">Las vacantes no disponibles dejan de mostrarse en la bolsa pública, pero permanecen en “Mis vacantes”.</p>
+          </aside>
         </section>
 
-        <aside className="mb-7 rounded-xl bg-[#17384b] p-5 text-white shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-6">
-          <div>
-            <h2 className="font-bold">Visibilidad de las vacantes</h2>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-white/80">
-              Las vacantes no disponibles se conservan para trazabilidad, pero
-              dejan de aparecer en búsquedas, comparaciones y postulaciones.
-              Puedes reactivarlas en cualquier momento.
-            </p>
-          </div>
-          <Link
-            href="/vacantes"
-            className="mt-4 inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-[#17384b] hover:bg-[#edf1f3] sm:mt-0"
-          >
-            Ver vacantes activas
-          </Link>
-        </aside>
-
-        <section className="overflow-hidden rounded-2xl border border-[#e7e0d4] bg-white shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-[#eee9df] p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+        <section className="mt-[22px] min-h-[504px] overflow-hidden rounded-2xl border border-[#ddd6c8] bg-white p-4 sm:p-7">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-lg font-bold">Mis vacantes</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                {loaded
-                  ? `${filteredVacancies.length} ${
-                      filteredVacancies.length === 1
-                        ? 'registro'
-                        : 'registros'
-                    }`
-                  : 'Cargando vacantes...'}
-              </p>
+              <h2 className="text-xl font-bold">Mis vacantes</h2>
             </div>
-            <div className="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_190px]">
-              <label className="flex min-h-11 items-center gap-2 rounded-lg border border-gray-200 px-3 focus-within:border-[#ed9635]">
-                <Search size={17} className="shrink-0 text-gray-400" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Buscar vacante o empresa..."
-                  aria-label="Buscar vacantes"
-                  className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    aria-label="Limpiar búsqueda"
-                    className="rounded p-1 text-gray-400 hover:bg-gray-100"
-                  >
-                    <X size={15} />
-                  </button>
-                )}
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-gray-500">
-                  Filtrar por estado
-                </span>
+            <div className="w-full sm:w-[350px]">
+              <label className="block text-[11px] font-semibold">Filtrar por estado
                 <select
                   value={filter}
                   onChange={(event) =>
                     setFilter(event.target.value as AvailabilityFilter)
                   }
                   aria-label="Filtrar por estado de disponibilidad"
-                  className="min-h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#ed9635]"
+                  className="mt-2 h-[46px] w-full rounded-[7px] border border-[#ddd6c8] bg-white px-3.5 text-[13px] outline-none focus:border-[#ffb162]"
                 >
-                  <option value="all">Todos los estados</option>
+                  <option value="all">Todos</option>
                   <option value="available">Disponible</option>
                   <option value="unavailable">No disponible</option>
                 </select>
@@ -246,75 +175,54 @@ export default function DisponibilidadVacantesPage() {
             </div>
           </div>
 
+          <div className="mt-3 flex min-h-[42px] flex-wrap items-center gap-x-6 gap-y-2 rounded-lg bg-[#f8f5ef] px-4 py-3 text-xs font-semibold sm:gap-x-9 sm:px-5">
+            <button type="button" onClick={() => setFilter('all')}>Todas {vacancies.length}</button>
+            <button type="button" onClick={() => setFilter('available')} className="text-[#2f7a5d]">Disponibles {activeVacancies.length}</button>
+            <button type="button" onClick={() => setFilter('unavailable')} className="text-[#a35139]">No disponibles {unavailableVacancies.length}</button>
+          </div>
+
           {loadError ? (
-            <p role="alert" className="m-5 rounded-lg bg-red-50 p-4 text-sm text-red-700">
+            <p role="alert" className="mt-5 rounded-lg bg-[#fff0db] p-4 text-sm text-[#a35139]">
               {loadError}
             </p>
           ) : !loaded ? (
-            <p className="p-10 text-center text-sm text-gray-500">
+            <p className="p-10 text-center text-sm text-[#6e7880]">
               Cargando vacantes...
             </p>
           ) : filteredVacancies.length === 0 ? (
             <div className="px-5 py-14 text-center">
-              <p className="font-semibold text-[#17384b]">
+              <p className="font-semibold text-[#1b2632]">
                 No encontramos vacantes
               </p>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-[#6e7880]">
                 Prueba con otra búsqueda o selecciona otro estado.
               </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
-                <thead className="bg-[#fcfbf8] text-xs uppercase tracking-wide text-gray-500">
-                  <tr>
-                    <th scope="col" className="px-5 py-3 font-semibold">Vacante</th>
-                    <th scope="col" className="px-5 py-3 font-semibold">Estado</th>
-                    <th scope="col" className="px-5 py-3 font-semibold">Actualización</th>
-                    <th scope="col" className="px-5 py-3 text-right font-semibold">Acción</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#eee9df]">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead className="sr-only"><tr><th>Identificador</th><th>Vacante</th><th>Estado</th><th>Visibilidad</th><th>Acción</th></tr></thead>
+                <tbody className="divide-y divide-[#ddd6c8]">
                   {filteredVacancies.map((vacancy) => {
-                    const available = vacancy.availability !== 'unavailable';
-                    const updatedAt = vacancy.availabilityUpdatedAt
-                      ? new Date(vacancy.availabilityUpdatedAt)
-                      : null;
+                    const available = vacancy.disponible;
 
                     return (
-                      <tr key={String(vacancy.id)} className="hover:bg-[#fcfbf8]">
-                        <td className="px-5 py-4">
-                          <p className="font-semibold text-[#17384b]">
-                            {vacancy.title}
-                          </p>
-                          <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
-                            <Building2 size={13} />
-                            {vacancy.company}
-                          </p>
-                          <p className="mt-1 text-xs text-gray-400">
-                            ID: {vacancy.id}
-                          </p>
-                        </td>
+                      <tr key={String(vacancy.id)} className="h-[68px] even:bg-[#f8f5ef]">
+                        <td className="w-[145px] px-4 text-xs font-semibold text-[#a35139]">{String(vacancy.id)}</td>
+                        <td className="w-[360px] px-4 text-[13px] font-medium">{vacancy.titulo}</td>
                         <td className="px-5 py-4">
                           <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                            className={`inline-flex h-[30px] min-w-[150px] items-center justify-center rounded-full px-4 text-[11px] font-bold ${
                               available
-                                ? 'bg-emerald-50 text-emerald-800'
-                                : 'bg-amber-50 text-amber-800'
+                                ? 'bg-[#e7f3ed] text-[#2f7a5d]'
+                                : 'bg-[#fff4db] text-[#a66b1f]'
                             }`}
                           >
-                            {available ? (
-                              <CheckCircle2 size={14} />
-                            ) : (
-                              <Clock3 size={14} />
-                            )}
                             {available ? 'Disponible' : 'No disponible'}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-sm text-gray-500">
-                          {updatedAt && !Number.isNaN(updatedAt.getTime())
-                            ? updatedAt.toLocaleDateString('es-BO')
-                            : 'Sin cambios'}
+                        <td className={`w-[220px] px-5 text-xs font-medium ${available ? 'text-[#2f7a5d]' : 'text-[#a35139]'}`}>
+                          {available ? 'Visible en bolsa' : 'Oculta en bolsa'}
                         </td>
                         <td className="px-5 py-4 text-right">
                           <button
@@ -323,11 +231,7 @@ export default function DisponibilidadVacantesPage() {
                               setMutationError('');
                               setSelectedVacancy(vacancy);
                             }}
-                            className={`min-h-10 rounded-lg px-4 py-2 text-xs font-bold transition ${
-                              available
-                                ? 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                : 'bg-[#ed9635] text-white hover:bg-[#d98223]'
-                            }`}
+                            className="h-11 min-w-[188px] rounded-[7px] border border-[#ddd6c8] bg-white px-4 text-[13px] font-semibold hover:bg-[#faf8f4]"
                           >
                             {available ? 'Cambiar estado' : 'Reactivar'}
                           </button>
@@ -339,14 +243,9 @@ export default function DisponibilidadVacantesPage() {
               </table>
             </div>
           )}
+          <p className="mt-3 rounded-[9px] bg-[#fff0db] px-5 py-[18px] text-xs font-medium text-[#a35139]">Antes de cambiar una vacante a “No disponible”, el sistema debe solicitar confirmación para evitar cambios accidentales.</p>
         </section>
-
-        <p className="mt-5 text-xs leading-5 text-gray-500">
-          Esta demostración guarda los cambios en el almacenamiento local de
-          este navegador. Los registros de vacantes permanecen guardados aunque
-          su estado cambie.
-        </p>
-      </div>
+      </main>
 
       {selectedVacancy && (
         <div
@@ -362,52 +261,56 @@ export default function DisponibilidadVacantesPage() {
             aria-modal="true"
             aria-labelledby="availability-dialog-title"
             aria-describedby="availability-dialog-description"
-            className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl sm:p-8"
+            className="max-h-[calc(100vh-2rem)] w-full max-w-[560px] overflow-y-auto rounded-2xl border border-[#ddd6c8] bg-white p-5 shadow-2xl sm:p-8"
           >
-            <p className="mb-3 inline-flex rounded-full bg-[#edf1f3] px-3 py-1 text-xs font-bold text-[#294d60]">
+            <p className="mb-4 inline-flex rounded-full bg-[#eaf0f7] px-4 py-2 text-xs font-bold text-[#2c3b4d]">
               VAC-{String(selectedVacancy.id).toUpperCase()}
             </p>
             <h2
               id="availability-dialog-title"
-              className="text-xl font-bold text-[#17384b]"
+              className="text-xl font-bold text-[#1b2632]"
             >
-              {selectedVacancy.availability === 'unavailable'
+              {!selectedVacancy.disponible
                 ? '¿Reactivar esta vacante?'
                 : '¿Marcar la vacante como no disponible?'}
             </h2>
             <p
               id="availability-dialog-description"
-              className="mt-2 text-sm leading-6 text-gray-600"
+              className="mt-3 text-sm leading-6 text-[#6e7880]"
             >
-              {selectedVacancy.availability === 'unavailable'
+              {!selectedVacancy.disponible
                 ? 'La vacante volverá a aparecer en las búsquedas y consultas disponibles.'
                 : 'La vacante dejará de aparecer en “Mis vacantes” para postulantes, pero su registro se conservará y podrás reactivarla después.'}
             </p>
-            <p className="mt-4 rounded-lg bg-[#fcfbf8] p-3 text-sm font-semibold text-[#17384b]">
-              {selectedVacancy.title} · {selectedVacancy.company}
+            <p className="mt-5 rounded-lg bg-[#f8f5ef] p-4 text-sm font-semibold text-[#1b2632]">
+              {selectedVacancy.titulo} · {selectedVacancy.empresa}
             </p>
             <div className="mt-6 flex flex-col-reverse justify-end gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={() => setSelectedVacancy(null)}
-                className="min-h-11 rounded-lg border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                className="h-11 rounded-[7px] border border-[#ddd6c8] px-6 text-[13px] font-semibold hover:bg-[#faf8f4]"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={confirmAvailabilityChange}
-                className="min-h-11 rounded-lg bg-[#ed9635] px-5 py-2 text-sm font-bold text-white hover:bg-[#d98223]"
+                disabled={mutating}
+                className="h-11 rounded-[7px] bg-[#ffb162] px-6 text-[13px] font-semibold text-[#1b2632] hover:bg-[#f2a455]"
               >
-                {selectedVacancy.availability === 'unavailable'
-                  ? 'Reactivar vacante'
-                  : 'Marcar no disponible'}
+                {mutating
+                  ? 'Guardando...'
+                  : !selectedVacancy.disponible
+                    ? 'Reactivar vacante'
+                    : 'Marcar no disponible'}
               </button>
             </div>
           </section>
         </div>
       )}
-    </main>
+      <VacancyAdminFooter />
+    </div>
   );
 }
 
@@ -420,17 +323,12 @@ function SummaryCard({
   value: number;
   tone?: 'default' | 'green' | 'amber';
 }) {
-  const valueColor =
-    tone === 'green'
-      ? 'text-emerald-700'
-      : tone === 'amber'
-        ? 'text-amber-700'
-        : 'text-[#17384b]';
+  const valueColor = tone === 'amber' ? 'text-[#a35139]' : 'text-[#1b2632]';
 
   return (
-    <article className="rounded-xl border border-[#e7e0d4] bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className={`mt-2 text-3xl font-bold ${valueColor}`}>{value}</p>
+    <article className="flex min-h-[94px] flex-col justify-center rounded-[14px] border border-[#ddd6c8] bg-white px-6">
+      <p className={`text-[28px] font-bold leading-none ${valueColor}`}>{value}</p>
+      <p className="mt-4 text-xs font-medium text-[#6e7880]">{label}</p>
     </article>
   );
 }

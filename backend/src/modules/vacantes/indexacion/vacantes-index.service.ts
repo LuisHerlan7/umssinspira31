@@ -30,6 +30,15 @@ export class VacantesIndexService {
     return vacancy;
   }
 
+  async actualizarDisponibilidad(id: string, disponible: boolean) {
+    const vacancy = await this.vacantesService.actualizarDisponibilidad(
+      id,
+      disponible,
+    );
+    await this.indexarFuente(vacancy);
+    return vacancy;
+  }
+
   mapToIndexDocument(vacancy: VacancySource): VacancyIndexDocument {
     return {
       id: vacancy.id,
@@ -43,6 +52,8 @@ export class VacantesIndexService {
       ubicacion: vacancy.ubicacion,
       area: vacancy.area,
       condiciones: vacancy.condiciones,
+      disponible: vacancy.disponible,
+      disponibilidadActualizadaAt: vacancy.disponibilidadActualizadaAt,
       requisitos: vacancy.requisitos.map((requirement) => ({
         id: requirement.id,
         nombre: requirement.nombre,

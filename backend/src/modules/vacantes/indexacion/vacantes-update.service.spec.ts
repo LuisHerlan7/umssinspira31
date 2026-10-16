@@ -22,6 +22,8 @@ function initialVacancy() {
     ubicacion: 'Cochabamba',
     area: 'Tecnología',
     condiciones: 'Jornada completa.',
+    disponible: true,
+    disponibilidadActualizadaAt: null,
     requisitos: [
       { id: '00000000-0000-4000-8000-000000000002', nombre: 'JavaScript' },
     ],

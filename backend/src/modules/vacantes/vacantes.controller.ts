@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { AddRequisitosDto } from './dto/add-requisitos.dto';
 import { CreateVacanteDto } from './dto/create-vacante.dto';
+import { UpdateDisponibilidadDto } from './dto/update-disponibilidad.dto';
 import { UpdateVacanteDto } from './dto/update-vacante.dto';
 import { ValidarEstructuraVacanteDto } from './dto/validar-estructura-vacante.dto';
 import { VacantesIndexService } from './indexacion/vacantes-index.service';
@@ -57,6 +58,17 @@ export class VacantesController {
   @Get(':id')
   obtenerPorId(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.vacantesService.obtenerPorId(id);
+  }
+
+  @Patch(':id/disponibilidad')
+  actualizarDisponibilidad(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateDisponibilidadDto,
+  ) {
+    return this.vacantesIndexService.actualizarDisponibilidad(
+      id,
+      dto.disponible,
+    );
   }
 
   @Patch(':id')

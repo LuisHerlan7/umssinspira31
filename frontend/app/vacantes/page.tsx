@@ -60,7 +60,7 @@ export default function VacantesPage() {
   return (
     <main className="flex min-h-[calc(100vh-84px)] flex-col bg-[#eee9df] text-[#1b2632]">
       <div className="mx-auto w-full max-w-[1440px] flex-1 px-5 pb-17 pt-6 sm:px-8 lg:px-14">
-        <nav aria-label="Ruta de navegaci├│n" className="text-xs text-[#7a858d]">
+        <nav aria-label="Ruta de navegación" className="text-xs text-[#7a858d]">
           Bolsa de trabajo /{' '}
           <span aria-current="page" className="font-medium text-[#1b2632]">
             Vacantes disponibles
@@ -76,13 +76,13 @@ export default function VacantesPage() {
 
         <section className="mt-20 rounded-[14px] border border-[#ddd6c8] bg-white px-5 py-3.5">
           <label htmlFor="vacancy-search" className="block text-[11px] font-semibold">
-            Buscar por cargo o c├│digo
+            Buscar por cargo o código
           </label>
           <input
             id="vacancy-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            aria-label="Buscar por cargo o c├│digo"
+            aria-label="Buscar por cargo o código"
             className="mt-2 h-[46px] w-full rounded-[7px] border border-[#ddd6c8] bg-white px-3.5 text-[13px] outline-none transition focus:border-[#ffb162]"
           />
         </section>
@@ -117,10 +117,10 @@ export default function VacantesPage() {
               <div>
                 <h3 className="text-xl font-semibold">No encontramos vacantes</h3>
                 <p className="mt-4 text-[13px] text-[#6e7880]">
-                  Prueba con otro cargo o c├│digo para volver a buscar.
+                  Prueba con otro cargo o código para volver a buscar.
                 </p>
                 <button type="button" onClick={clearSearch} className="mt-7 h-11 rounded-[7px] border border-[#ddd6c8] bg-white px-9 text-[13px] font-semibold hover:bg-[#faf8f4]">
-                  Limpiar b├║squeda
+                  Limpiar búsqueda
                 </button>
               </div>
             </div>
@@ -135,7 +135,7 @@ export default function VacantesPage() {
                     </span>
                     <h3 className="text-2xl font-bold">{vacancy.titulo}</h3>
                     <p className="mt-2 text-[13px] font-medium text-[#6e7880]">
-                      {identifier} ┬À {vacancy.empresa}
+                      {identifier} · {vacancy.empresa}
                     </p>
                     <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
                       <p className="shrink-0 text-xs font-semibold">Requisitos principales</p>

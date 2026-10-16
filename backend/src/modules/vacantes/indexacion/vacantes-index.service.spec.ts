@@ -26,6 +26,8 @@ function vacancySource() {
     ubicacion: 'Cochabamba',
     area: 'Datos y Analítica',
     condiciones: 'Jornada completa.',
+    disponible: true,
+    disponibilidadActualizadaAt: null,
     requisitos: [
       { id: '00000000-0000-4000-8000-000000000002', nombre: 'SQL' },
       { id: '00000000-0000-4000-8000-000000000003', nombre: 'Python' },
