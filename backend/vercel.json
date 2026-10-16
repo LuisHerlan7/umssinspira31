@@ -1,9 +1,6 @@
 {
   "version": 2,
   "buildCommand": "pnpm run vercel-build || npm run vercel-build",
-  "env": {
-    "NODE_OPTIONS": "--experimental-require-module"
-  },
   "functions": {
     "api/index.js": {
       "includeFiles": "dist/**"
