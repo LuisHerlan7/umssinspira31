@@ -6,21 +6,18 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  Patch,
-  Post,
-} from '@nestjs/common';
-import { ActualizarRequisitoDto } from './dto/actualizar-requisito.dto';
-import { AsociarRequisitosDto } from './dto/asociar-requisitos.dto';
-import { ValidarEstructuraVacanteDto } from './dto/validar-estructura-vacante.dto';
-import { RequisitosTecnicosService } from './requisitos-tecnicos.service';
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
+import { ActualizarRequisitoDto } from './dto/actualizar-requisito.dto';
 import { AddRequisitosDto } from './dto/add-requisitos.dto';
+import { AsociarRequisitosDto } from './dto/asociar-requisitos.dto';
 import { CreateVacanteDto } from './dto/create-vacante.dto';
 import { ValidarEstructuraVacanteDto } from './dto/validar-estructura-vacante.dto';
 import { VacantesIndexService } from './indexacion/vacantes-index.service';
+import { RequisitosTecnicosService } from './requisitos-tecnicos.service';
 import { VacantesEstructuraService } from './vacantes-estructura.service';
 import { VacantesService } from './vacantes.service';
 
@@ -43,11 +40,22 @@ export class VacantesController {
   @HttpCode(HttpStatus.CREATED)
   asociarRequisitos(
     @Param('id') idVacante: string,
-    @Body() dto: AsociarRequisitosDto,
+    @Body() dto: AsociarRequisitosDto | AddRequisitosDto,
   ) {
+    if (
+      Array.isArray(dto.requisitos) &&
+      dto.requisitos.length > 0 &&
+      typeof dto.requisitos[0] === 'string'
+    ) {
+      return this.vacantesService.agregarRequisitos(
+        idVacante,
+        dto.requisitos as string[],
+      );
+    }
+
     return this.requisitosTecnicosService.asociarRequisitos(
       idVacante,
-      dto.requisitos,
+      (dto as AsociarRequisitosDto).requisitos,
     );
   }
 
@@ -83,6 +91,8 @@ export class VacantesController {
       idVacante,
       idRequisito,
     );
+  }
+
   @Get('disponibilidad')
   consultarDisponibilidad(@Query('buscar') buscar?: string) {
     return this.vacantesService.consultarDisponibilidad(buscar);
@@ -113,13 +123,5 @@ export class VacantesController {
   @Post(':id/indexar')
   indexar(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.vacantesIndexService.indexarVacante(id);
-  }
-
-  @Post(':id/requisitos')
-  agregarRequisitos(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() dto: AddRequisitosDto,
-  ) {
-    return this.vacantesService.agregarRequisitos(id, dto.requisitos);
   }
 }

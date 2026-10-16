@@ -15,7 +15,7 @@ import { VacantesService } from './vacantes.service';
   ],
   controllers: [VacantesController],
   providers: [
-    RequisitosTecnicosService
+    RequisitosTecnicosService,
     VacantesEstructuraService,
     VacantesService,
     ElasticsearchService,
