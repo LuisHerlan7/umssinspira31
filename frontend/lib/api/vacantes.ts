@@ -33,8 +33,13 @@ type ApiErrorBody = {
   message?: string | string[];
 };
 
+export const DEFAULT_API_URL =
+  process.env.NODE_ENV === 'production'
+    ? 'https://backend-umsspira.vercel.app'
+    : 'http://localhost:3001';
+
 const API_URL = (
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+  process.env.NEXT_PUBLIC_API_URL?.trim() || DEFAULT_API_URL
 ).replace(/\/$/, '');
 
 export const configuredCompanyId =

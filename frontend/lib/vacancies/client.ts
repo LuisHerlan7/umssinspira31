@@ -31,10 +31,15 @@ export class VacancyStructureClient {
   private readonly fetcher: Fetcher;
 
   constructor(options: VacancyStructureClientOptions = {}) {
+    const defaultApiUrl =
+      process.env.NODE_ENV === 'production'
+        ? 'https://backend-umsspira.vercel.app'
+        : 'http://localhost:3001';
+
     this.baseUrl = normalizeBaseUrl(
       options.baseUrl ??
-        process.env.NEXT_PUBLIC_API_URL ??
-        "http://localhost:3001",
+        process.env.NEXT_PUBLIC_API_URL?.trim() ??
+        defaultApiUrl,
     );
     this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));
   }
