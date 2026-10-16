@@ -54,6 +54,21 @@ if (!process.env.VERCEL) {
 
 // Vercel serverless function export
 export default async function handler(req: any, res: any) {
-  const server = await createNestServer();
-  server(req, res);
+  try {
+    const server = await createNestServer();
+    server(req, res);
+  } catch (err: any) {
+    console.error('NestJS bootstrap serverless error:', err);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        error: 'NESTJS_BOOTSTRAP_ERROR',
+        message:
+          'Failed to initialize Nest application in serverless environment.',
+        details: String(err?.message || err),
+        stack: err?.stack,
+      }),
+    );
+  }
 }
