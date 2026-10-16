@@ -144,27 +144,6 @@ export default function EditarVacanteForm({ id }: Props) {
 
   return (
     <main className="min-h-screen bg-[#f3efe7] text-slate-800">
-      <header className="bg-[#172838] px-6 py-4 text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-7">
-            <a href="/" className="text-lg font-black">
-              UMSS<span className="text-orange-400">PIRA</span>
-            </a>
-
-            <nav className="flex flex-wrap gap-5 text-xs">
-              <a href="/">Inicio</a>
-              <a href="/vacantes">Mis vacantes</a>
-              <span>Postulantes</span>
-              <span>Mi empresa</span>
-            </nav>
-          </div>
-
-          <div className="text-xs text-slate-300">
-            Administración de vacantes
-          </div>
-        </div>
-      </header>
-
       <div className="mx-auto max-w-6xl px-5 py-9">
         <p className="text-xs text-slate-500">
           Mis vacantes / Detalles de vacante / Editar

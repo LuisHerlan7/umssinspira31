@@ -129,7 +129,7 @@ export default function MisVacantesCliente() {
                 return (
                   <li
                     key={vacancy.id}
-                    className={`grid gap-3 rounded-lg px-4 py-4 text-sm sm:grid-cols-[minmax(180px,1fr)_minmax(240px,2fr)_170px] sm:items-center ${
+                    className={`grid gap-3 rounded-lg px-4 py-4 text-sm sm:grid-cols-[minmax(160px,1fr)_minmax(220px,2fr)_120px_110px] sm:items-center ${
                       index % 2 === 1 ? 'bg-[#f8f5ef]' : ''
                     }`}
                   >
@@ -149,6 +149,12 @@ export default function MisVacantesCliente() {
                     >
                       {vacancy.estado}
                     </span>
+                    <Link
+                      href={`/vacantes/${encodeURIComponent(vacancy.id)}/requisitos`}
+                      className="inline-flex items-center justify-center rounded-md border border-[#dfd5c4] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#8b4f17] hover:bg-[#fff9ef] transition-colors"
+                    >
+                      Requisitos
+                    </Link>
                   </li>
                 );
               })}

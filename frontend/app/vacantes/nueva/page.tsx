@@ -70,52 +70,36 @@ if (newErrors.length > 0) {
   return;
 }
 
-try {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  const vacancies: Vacancy[] = saved ? JSON.parse(saved) : [];
+    try {
+      setIsSaving(true);
+      const vacancy = await createVacancy({
+        idEmpresa: configuredCompanyId,
+        titulo: title.trim(),
+        modalidad: modality,
+        descripcion: description.trim(),
+        ubicacion: location.trim(),
+        area,
+        condiciones: conditions.trim(),
+        requisitos: requirements
+          .split('\n')
+          .map((item) => item.trim())
+          .filter(Boolean),
+      });
 
-  if (!Array.isArray(vacancies)) {
-    throw new Error('Los datos guardados no tienen el formato esperado.');
-  }
-
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify([...vacancies, vacancy]),
-  );
-
-  router.push(
-    `/vacantes/nueva/requisitos?id=${vacancy.id}&titulo=${encodeURIComponent(vacancy.title)}`,
-  );
-  router.refresh();
-
-} catch {
-  setIsSaving(true);
-  const vacancy = await createVacancy({
-    idEmpresa: configuredCompanyId,
-    titulo: title.trim(),
-    modalidad: modality,
-    descripcion: description.trim(),
-    ubicacion: location.trim(),
-    area,
-    condiciones: conditions.trim(),
-    requisitos: requirements
-      .split('\n')
-      .map((item) => item.trim())
-      .filter(Boolean),
-  });
-
-  router.push(`/vacantes/${encodeURIComponent(vacancy.id)}/confirmacion`);
-} catch (error) {
-  setSaveError(
-    error instanceof Error
-      ? error.message
-      : 'No se pudo guardar la vacante. Inténtalo nuevamente.',
-  );
-} finally {
-  setIsSaving(false);
-}
-
-};
+      router.push(
+        `/vacantes/nueva/requisitos?id=${encodeURIComponent(vacancy.id)}&titulo=${encodeURIComponent(vacancy.titulo)}`,
+      );
+      router.refresh();
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar la vacante. Inténtalo nuevamente.',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
 return ( <main className="min-h-screen bg-[#f1eee4] px-5 py-8 sm:px-8"> <div className="mx-auto max-w-4xl"> <Link
        href="/vacantes"
@@ -129,18 +113,28 @@ Volver a vacantes </Link>
         UMSSPIRA / Vacantes / Registrar
       </p>
 
-      <div className="flex items-center gap-3">
-        <div className="rounded-lg bg-orange-100 p-3 text-orange-600">
-          <BriefcaseBusiness size={26} />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg bg-orange-100 p-3 text-orange-600">
+            <BriefcaseBusiness size={26} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Registrar vacante
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Completa la información de la oportunidad laboral.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            Registrar vacante
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Completa la información de la oportunidad laboral.
-          </p>
-        </div>
+
+        <Link
+          href="/vacantes/nueva/requisitos?id=VAC-2026-047&titulo=Analista%20de%20Datos%20Junior"
+          className="inline-flex items-center gap-2 rounded-lg border border-[#e7d8bf] bg-[#fffaf0] px-4 py-2.5 text-xs font-semibold text-[#a8651a] hover:bg-[#fff2dc] transition-colors shadow-xs"
+        >
+          <span>Ir a Requisitos Técnicos (Paso 2)</span>
+          <span>→</span>
+        </Link>
       </div>
     </div>
 

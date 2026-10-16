@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { TechnicalRequirementsClient } from './technical-requirements-client.ts';
+import type { RequisitoTecnico } from './contracts.ts';
 
 describe('TechnicalRequirementsClient (HU2)', () => {
   it('normaliza nombres de competencias canónicas', () => {

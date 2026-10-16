@@ -4,11 +4,7 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Bell,
   Check,
-  ChevronDown,
-  MessageSquare,
-  Search,
   Trash2,
   X,
 } from 'lucide-react';
@@ -262,89 +258,7 @@ export default function TechnicalRequirementsView({
 
   return (
     <div className="min-h-screen bg-[#f3efe6] text-gray-900 font-sans flex flex-col">
-      {/* Top Recruiter Navigation Bar (Matching Mockup Header) */}
-      <header className="bg-[#182936] text-white sticky top-0 z-40 border-b border-[#223b4e] shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
-          {/* Logo & Navigation */}
-          <div className="flex items-center gap-8">
-            <Link href="/vacantes" className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-lg bg-[#ed9635] flex items-center justify-center text-[#182936] font-bold text-xl shadow-xs">
-                🦉
-              </div>
-              <span className="font-extrabold tracking-wider text-xl text-white">
-                UMSS<span className="text-[#ed9635]">PIRA</span>
-              </span>
-            </Link>
 
-            <nav className="hidden md:flex items-center gap-6 text-sm">
-              <Link
-                href="/vacantes"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Inicio
-              </Link>
-              <Link
-                href="/vacantes"
-                className="text-white font-bold border-b-2 border-[#ed9635] py-5 -mb-[1px]"
-              >
-                Mis vacantes
-              </Link>
-              <Link
-                href="/vacantes"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Postulantes
-              </Link>
-              <Link
-                href="/vacantes"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Mi empresa
-              </Link>
-            </nav>
-          </div>
-
-          {/* Right Header Actions */}
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              aria-label="Buscar"
-              className="p-2 text-gray-300 hover:text-white rounded-full hover:bg-white/10 transition-colors"
-            >
-              <Search size={18} />
-            </button>
-            <button
-              type="button"
-              aria-label="Mensajes"
-              className="p-2 text-gray-300 hover:text-white rounded-full hover:bg-white/10 transition-colors"
-            >
-              <MessageSquare size={18} />
-            </button>
-            <button
-              type="button"
-              aria-label="Notificaciones"
-              className="relative p-2 text-gray-300 hover:text-white rounded-full hover:bg-white/10 transition-colors"
-            >
-              <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#ed9635]"></span>
-            </button>
-
-            {/* Recruiter Profile Dropdown */}
-            <div className="flex items-center gap-2.5 pl-3 border-l border-white/15 cursor-pointer">
-              <div className="h-9 w-9 rounded-full bg-[#3b5162] text-white flex items-center justify-center font-bold text-xs tracking-wider border border-white/20">
-                TA
-              </div>
-              <div className="hidden sm:block text-left text-xs">
-                <p className="font-semibold text-white leading-tight">
-                  TecnoAndes S.R.L.
-                </p>
-                <p className="text-gray-400 text-[11px]">Empresa verificada</p>
-              </div>
-              <ChevronDown size={14} className="text-gray-400 hidden sm:block" />
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8">

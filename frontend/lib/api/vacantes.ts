@@ -38,10 +38,10 @@ const API_URL = (
 ).replace(/\/$/, '');
 
 export const configuredCompanyId =
-  process.env.NEXT_PUBLIC_EMPRESA_ID?.trim() ?? '';
+  process.env.NEXT_PUBLIC_EMPRESA_ID?.trim() || 'demo-empresa-01';
 
 export const configuredCompanyName =
-  process.env.NEXT_PUBLIC_EMPRESA_NAME?.trim() ?? '';
+  process.env.NEXT_PUBLIC_EMPRESA_NAME?.trim() || 'TecnoAndes S.R.L.';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
