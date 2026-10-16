@@ -11,7 +11,11 @@ export type Vacancy = {
   requirements: string[];
   conditions?: string;
   createdAt?: string;
+  availability?: 'available' | 'unavailable';
+  availabilityUpdatedAt?: string;
 };
+
+export const VACANCIES_CHANGED_EVENT = 'umsspira-vacancies-changed';
 
 export const DEMO_VACANCIES: Vacancy[] = [
   {
@@ -70,7 +74,12 @@ function isVacancy(value: unknown): value is Vacancy {
     (vacancy.conditions === undefined ||
       typeof vacancy.conditions === 'string') &&
     (vacancy.createdAt === undefined ||
-      typeof vacancy.createdAt === 'string')
+      typeof vacancy.createdAt === 'string') &&
+    (vacancy.availability === undefined ||
+      vacancy.availability === 'available' ||
+      vacancy.availability === 'unavailable') &&
+    (vacancy.availabilityUpdatedAt === undefined ||
+      typeof vacancy.availabilityUpdatedAt === 'string')
   );
 }
 
@@ -89,21 +98,81 @@ export function readSavedVacancies(): Vacancy[] {
   return parseSavedVacancies(localStorage.getItem(VACANCIES_STORAGE_KEY));
 }
 
-export function readAllVacancies(): Vacancy[] {
-  return [...DEMO_VACANCIES, ...readSavedVacancies()];
+export function getVacanciesIn(
+  savedVacancies: Vacancy[],
+  { includeUnavailable = false }: { includeUnavailable?: boolean } = {},
+): Vacancy[] {
+  const vacanciesById = new Map<string, Vacancy>();
+  DEMO_VACANCIES.forEach((vacancy) =>
+    vacanciesById.set(String(vacancy.id), vacancy),
+  );
+
+  for (const vacancy of savedVacancies) {
+    const id = String(vacancy.id);
+    vacanciesById.set(id, {
+      ...vacanciesById.get(id),
+      ...vacancy,
+    });
+  }
+
+  const vacancies = Array.from(vacanciesById.values());
+  return includeUnavailable
+    ? vacancies
+    : vacancies.filter((vacancy) => vacancy.availability !== 'unavailable');
+}
+
+export function readAllVacancies(
+  options: { includeUnavailable?: boolean } = {},
+): Vacancy[] {
+  return getVacanciesIn(readSavedVacancies(), options);
 }
 
 export function findVacancyIn(
   id: string,
   savedVacancies: Vacancy[],
+  options: { includeUnavailable?: boolean } = {},
 ): Vacancy | undefined {
-  return [...DEMO_VACANCIES, ...savedVacancies].find(
+  return getVacanciesIn(savedVacancies, options).find(
     (vacancy) => String(vacancy.id) === id,
   );
 }
 
-export function findVacancy(id: string): Vacancy | undefined {
-  return findVacancyIn(id, readSavedVacancies());
+export function findVacancy(
+  id: string,
+  options: { includeUnavailable?: boolean } = {},
+): Vacancy | undefined {
+  return findVacancyIn(id, readSavedVacancies(), options);
+}
+
+export function updateVacancyAvailability(
+  id: string,
+  availability: 'available' | 'unavailable',
+): Vacancy {
+  const savedVacancies = readSavedVacancies();
+  const vacancy = findVacancyIn(id, savedVacancies, {
+    includeUnavailable: true,
+  });
+
+  if (!vacancy) {
+    throw new Error('No se encontró la vacante que intentas actualizar.');
+  }
+
+  const updatedVacancy: Vacancy = {
+    ...vacancy,
+    availability,
+    availabilityUpdatedAt: new Date().toISOString(),
+  };
+  const nextSavedVacancies = savedVacancies.filter(
+    (savedVacancy) => String(savedVacancy.id) !== id,
+  );
+  nextSavedVacancies.push(updatedVacancy);
+  localStorage.setItem(
+    VACANCIES_STORAGE_KEY,
+    JSON.stringify(nextSavedVacancies),
+  );
+
+  window.dispatchEvent(new Event(VACANCIES_CHANGED_EVENT));
+  return updatedVacancy;
 }
 
 export function isDemoVacancy(id: string): boolean {

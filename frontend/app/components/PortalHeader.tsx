@@ -1,14 +1,35 @@
 'use client';
 
 import { Suspense } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  Bell,
+  ChevronDown,
+  GraduationCap,
+  Search,
+} from 'lucide-react';
 
 const navigation = [
   { label: 'Inicio', href: '/' },
   { label: 'Vacantes', href: '/vacantes' },
   { label: 'Mis postulaciones', href: '/postulaciones' },
   { label: 'Perfil', href: '/perfil/experiencia-laboral' },
+];
+
+const jobsIdentityFallback = {
+  name: 'Portal de egresados',
+  description: 'UMSS · Vinculación Laboral',
+};
+
+const jobsNavigation = [
+  { label: 'Inicio', href: navigation[0].href },
+  { label: 'Comunidad' },
+  { label: 'Directorio' },
+  { label: 'Bolsa de trabajo', href: navigation[1].href },
+  { label: 'Mentorías' },
+  { label: 'Eventos', expandable: true },
 ];
 
 function NavigationLinks({ pathname }: { pathname?: string | null }) {
@@ -46,6 +67,7 @@ function HeaderBar({ pathname }: { pathname?: string | null }) {
     return null;
   }
 
+function StandardHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#e7e0d4] bg-white">
       <div className="mx-auto flex min-h-[76px] max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-3 sm:px-8">
@@ -89,15 +111,164 @@ function HeaderBar({ pathname }: { pathname?: string | null }) {
   );
 }
 
-function DynamicHeader() {
+function CompanyHeader() {
+  const companyName =
+    process.env.NEXT_PUBLIC_EMPRESA_NAME?.trim() || 'Empresa registrada';
+  const initials = companyName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-[#2c3b4d] bg-[#1b2632] text-[#eee9df]">
+      <div className="mx-auto flex min-h-[84px] max-w-[1440px] items-center gap-6 px-5 sm:px-8 lg:px-5">
+        <Link href="/mis-vacantes" className="flex shrink-0 items-center gap-2">
+          <GraduationCap size={30} className="text-[#ffb162]" aria-hidden="true" />
+          <span className="text-lg font-black tracking-tight">
+            UMSS<span className="text-[#ff9f43]">PIRA</span>
+          </span>
+        </Link>
+
+        <nav aria-label="Navegación de empresa" className="hidden items-stretch self-stretch md:flex">
+          <Link href="/" className="flex items-center px-3 text-sm font-medium hover:text-white">
+            Inicio
+          </Link>
+          <Link
+            href="/mis-vacantes"
+            aria-current="page"
+            className="flex items-center border-b-[3px] border-[#ffb162] px-3 text-sm font-medium"
+          >
+            Mis vacantes
+          </Link>
+          <Link href="/postulaciones" className="flex items-center px-3 text-sm font-medium hover:text-white">
+            Postulantes
+          </Link>
+          <span className="flex items-center px-3 text-sm font-medium text-[#c9c1b1]">
+            Mi empresa
+          </span>
+        </nav>
+
+        <div className="ml-auto hidden items-center gap-2 lg:flex">
+          <span className="flex h-11 w-11 items-center justify-center" aria-label="Buscar">
+            <Search size={19} />
+          </span>
+          <span className="flex h-11 w-11 items-center justify-center" aria-label="Notificaciones">
+            <Bell size={19} />
+          </span>
+          <span className="mx-2 h-11 w-px bg-[#2c3b4d]" />
+          <span className="flex h-11 w-11 items-center justify-center rounded-full border border-[#ffb162] text-xs font-bold">
+            {initials || 'E'}
+          </span>
+          <span className="max-w-40">
+            <span className="block truncate text-[13px] font-semibold">{companyName}</span>
+            <span className="block text-[11px] text-[#c9c1b1]">Empresa verificada</span>
+          </span>
+          <ChevronDown size={15} className="ml-1" />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function JobsHeader({ pathname }: { pathname: string }) {
+  return (
+    <header className="sticky top-0 z-50 border-b border-[#2c3b4d] bg-[#1b2632] text-[#eee9df]">
+      <div className="mx-auto flex min-h-[84px] max-w-[1440px] items-center gap-6 px-5 sm:px-8 lg:px-5">
+        <Link href="/vacantes" className="flex w-[170px] shrink-0 items-center">
+          <Image
+            src="/hu04/header-logo.png"
+            alt="UMSSPIRA"
+            width={170}
+            height={56}
+            priority
+            className="h-auto w-[170px]"
+          />
+        </Link>
+
+        <nav aria-label="Navegación principal" className="hidden self-stretch lg:flex">
+          {jobsNavigation.map((item) => {
+            const active = item.href === '/vacantes' && pathname.startsWith('/vacantes');
+            const className = `flex items-center px-3 text-sm font-medium ${
+              active ? 'border-b-[3px] border-[#ffb162]' : ''
+            }`;
+            const content = (
+              <>
+                {item.label}
+                {item.expandable ? (
+                  <ChevronDown size={13} className="ml-1 text-[#ffb162]" />
+                ) : null}
+              </>
+            );
+
+            return item.href ? (
+              <Link
+                key={item.label}
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={className}
+              >
+                {content}
+              </Link>
+            ) : (
+              <span
+                key={item.label}
+                className={`${className} ${item.expandable ? 'text-[#c9c1b1]' : ''}`}
+              >
+                {content}
+              </span>
+            );
+          })}
+        </nav>
+
+        <div className="ml-auto hidden items-center gap-1 md:flex">
+          <span className="flex h-11 w-11 items-center justify-center" aria-label="Buscar">
+            <Search size={19} />
+          </span>
+          <span className="flex h-11 w-11 items-center justify-center" aria-label="Mensajes">
+            <Image src="/hu04/header-messages.svg" alt="" width={24} height={24} />
+          </span>
+          <span className="flex h-11 w-11 items-center justify-center" aria-label="Notificaciones">
+            <Image src="/hu04/header-notifications.svg" alt="" width={44} height={44} />
+          </span>
+          <span className="mx-3 h-11 w-px bg-[#2c3b4d]" />
+          <span className="relative flex h-11 w-11 items-center justify-center" aria-hidden="true">
+            <Image src="/hu04/header-avatar.svg" alt="" width={44} height={44} className="absolute inset-0" />
+          </span>
+          <span className="hidden xl:block">
+            <span className="block text-[13px] font-semibold">
+              {jobsIdentityFallback.name}
+            </span>
+            <span className="block text-[11px] text-[#c9c1b1]">
+              {jobsIdentityFallback.description}
+            </span>
+          </span>
+          <Image src="/hu04/header-chevron.svg" alt="" width={14} height={14} className="ml-1" />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function RoutedHeader() {
   const pathname = usePathname();
-  return <HeaderBar pathname={pathname} />;
+  const isCompanyRoute =
+    pathname === '/mis-vacantes' ||
+    /^\/vacantes\/[^/]+\/confirmacion$/.test(pathname);
+
+  const isJobsRoute =
+    pathname === '/vacantes' || /^\/vacantes\/[^/]+$/.test(pathname);
+
+  if (isCompanyRoute) return <CompanyHeader />;
+  if (isJobsRoute) return <JobsHeader pathname={pathname} />;
+  return <StandardHeader />;
 }
 
 export default function PortalHeader() {
   return (
-    <Suspense fallback={<HeaderBar pathname={null} />}>
-      <DynamicHeader />
+    <Suspense fallback={<StandardHeader />}>
+      <RoutedHeader />
     </Suspense>
   );
 }

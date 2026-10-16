@@ -4,8 +4,11 @@ import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, BriefcaseBusiness, Save } from 'lucide-react';
-
-const STORAGE_KEY = 'umsspira-vacantes';
+import {
+  configuredCompanyId,
+  configuredCompanyName,
+  createVacancy,
+} from '../../../lib/api/vacantes';
 
 const AREAS = [
 'Desarrollo de Software',
@@ -16,24 +19,11 @@ const AREAS = [
 'Otra área',
 ];
 
-type Vacancy = {
-id: string;
-title: string;
-company: string;
-area: string;
-location: string;
-modality: string;
-description: string;
-requirements: string[];
-conditions: string;
-createdAt: string;
-};
-
 export default function NuevaVacantePage() {
 const router = useRouter();
 
 const [title, setTitle] = useState('');
-const [company, setCompany] = useState('');
+const [company] = useState(configuredCompanyName);
 const [area, setArea] = useState('');
 const [location, setLocation] = useState('');
 const [modality, setModality] = useState('');
@@ -42,8 +32,9 @@ const [requirements, setRequirements] = useState('');
 const [conditions, setConditions] = useState('');
 const [errors, setErrors] = useState<string[]>([]);
 const [saveError, setSaveError] = useState('');
+const [isSaving, setIsSaving] = useState(false);
 
-const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 event.preventDefault();
 setErrors([]);
 setSaveError('');
@@ -59,6 +50,12 @@ if (!modality) newErrors.push('Selecciona una modalidad de trabajo.');
 if (!description.trim()) newErrors.push('La descripción es obligatoria.');
 if (!requirements.trim()) newErrors.push('Debes registrar al menos un requisito.');
 if (!conditions.trim()) newErrors.push('Las condiciones de trabajo son obligatorias.');
+if (!configuredCompanyId) {
+  newErrors.push('No se configuró la empresa que registrará la vacante.');
+}
+if (!configuredCompanyName) {
+  newErrors.push('No se configuró el nombre de la empresa.');
+}
 
 if (title.trim().length > 100) {
   newErrors.push('El cargo no puede superar los 100 caracteres.');
@@ -72,22 +69,6 @@ if (newErrors.length > 0) {
   setErrors(newErrors);
   return;
 }
-
-const vacancy: Vacancy = {
-  id: `vac-${Date.now()}`,
-  title: title.trim(),
-  company: company.trim(),
-  area,
-  location: location.trim(),
-  modality,
-  description: description.trim(),
-  requirements: requirements
-    .split('\n')
-    .map((item) => item.trim())
-    .filter(Boolean),
-  conditions: conditions.trim(),
-  createdAt: new Date().toISOString(),
-};
 
 try {
   const saved = localStorage.getItem(STORAGE_KEY);
@@ -108,9 +89,30 @@ try {
   router.refresh();
 
 } catch {
+  setIsSaving(true);
+  const vacancy = await createVacancy({
+    idEmpresa: configuredCompanyId,
+    titulo: title.trim(),
+    modalidad: modality,
+    descripcion: description.trim(),
+    ubicacion: location.trim(),
+    area,
+    condiciones: conditions.trim(),
+    requisitos: requirements
+      .split('\n')
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
+
+  router.push(`/vacantes/${encodeURIComponent(vacancy.id)}/confirmacion`);
+} catch (error) {
   setSaveError(
-    'No se pudo guardar la vacante en este navegador. Comprueba el almacenamiento disponible e inténtalo de nuevo.',
+    error instanceof Error
+      ? error.message
+      : 'No se pudo guardar la vacante. Inténtalo nuevamente.',
   );
+} finally {
+  setIsSaving(false);
 }
 
 };
@@ -195,9 +197,9 @@ Volver a vacantes </Link>
           <input
             id="company"
             value={company}
-            onChange={(event) => setCompany(event.target.value)}
-            placeholder="Nombre de la empresa"
-            className="w-full rounded-md border border-gray-200 bg-blue-50 px-3 py-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-orange-300"
+            readOnly
+            placeholder="Configura NEXT_PUBLIC_EMPRESA_NAME"
+            className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-3 text-sm text-gray-700 outline-none"
           />
         </div>
 
@@ -297,23 +299,20 @@ Volver a vacantes </Link>
         </div>
       </div>
 
-      <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
-        <strong>Modo de demostración:</strong> esta vacante se guardará únicamente en el almacenamiento local de este navegador. La integración con Supabase queda pendiente.
-      </div>
-
       <div className="mt-7 flex flex-col-reverse justify-end gap-3 sm:flex-row">
         <Link
-          href="/vacantes"
+          href="/mis-vacantes"
           className="rounded-md border border-gray-300 px-5 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
         >
           Cancelar
         </Link>
         <button
           type="submit"
+          disabled={isSaving}
           className="inline-flex items-center justify-center gap-2 rounded-md bg-orange-400 px-5 py-3 text-sm font-semibold text-white hover:bg-orange-500"
         >
           <Save size={17} />
-          Guardar vacante
+          {isSaving ? 'Guardando...' : 'Guardar vacante'}
         </button>
       </div>
     </form>

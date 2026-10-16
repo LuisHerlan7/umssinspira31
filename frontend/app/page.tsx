@@ -1,6 +1,5 @@
-
-import SkillsPage from "./skills/page";
+﻿import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return <SkillsPage />;
+  redirect('/vacantes');
 }
