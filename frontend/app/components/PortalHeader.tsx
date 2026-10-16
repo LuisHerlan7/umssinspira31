@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense } from 'react';
@@ -63,10 +62,10 @@ function NavigationLinks({ pathname }: { pathname?: string | null }) {
   });
 }
 
-function ActiveNavigationLinks() {
-  const pathname = usePathname();
-  return <NavigationLinks pathname={pathname} />;
-}
+function HeaderBar({ pathname }: { pathname?: string | null }) {
+  if (pathname?.includes('/requisitos')) {
+    return null;
+  }
 
 function StandardHeader() {
   return (
@@ -91,9 +90,7 @@ function StandardHeader() {
           aria-label="Navegación principal"
           className="flex flex-wrap items-center gap-1 sm:gap-2"
         >
-          <Suspense fallback={<NavigationLinks />}>
-            <ActiveNavigationLinks />
-          </Suspense>
+          <NavigationLinks pathname={pathname} />
         </nav>
 
         <div className="hidden items-center gap-3 border-l border-gray-200 pl-4 md:flex">

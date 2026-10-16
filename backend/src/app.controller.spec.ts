@@ -1,34 +1,35 @@
-import { Controller, Get } from '@nestjs/common';
+import { AppController } from './app.controller';
 import { SupabaseService } from './config/supabase.service';
 
-@Controller()
-export class AppController {
-  constructor(private readonly supabaseService: SupabaseService) {}
+describe('AppController', () => {
+  let appController: AppController;
+  let fakeSupabaseService: Partial<SupabaseService>;
 
-  @Get()
-  getHello(): string {
-    return 'UMSSINSPIRA2 Backend funcionando';
-  }
-
-  @Get('supabase-test')
-  async testSupabase() {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('usuario')
-      .select('*')
-      .limit(1);
-
-    if (error) {
-      return {
-        conectado: false,
-        error: error.message,
-      };
-    }
-
-    return {
-      conectado: true,
-      mensaje: 'Conexión con Supabase exitosa',
-      data,
+  beforeEach(() => {
+    fakeSupabaseService = {
+      getClient: () =>
+        ({
+          from: () => ({
+            select: () => ({
+              limit: () => Promise.resolve({ data: [{ usuario_id: '1' }], error: null }),
+            }),
+          }),
+        }) as any,
     };
-  }
-}
+    appController = new AppController(fakeSupabaseService as SupabaseService);
+  });
+
+  describe('getHello', () => {
+    it('should return backend running message', () => {
+      expect(appController.getHello()).toBe('UMSSINSPIRA2 Backend funcionando');
+    });
+  });
+
+  describe('testSupabase', () => {
+    it('should report successful supabase connection', async () => {
+      const result = await appController.testSupabase();
+      expect(result.conectado).toBe(true);
+      expect(result.mensaje).toBe('Conexión con Supabase exitosa');
+    });
+  });
+});

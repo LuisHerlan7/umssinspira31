@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { RequisitosTecnicosService } from './requisitos-tecnicos.service';
 import { ConfigModule } from '@nestjs/config';
 import { SupabaseModule } from '../../config/supabase.module';
 import { ElasticsearchService } from './indexacion/elasticsearch.service';
@@ -14,6 +15,7 @@ import { VacantesService } from './vacantes.service';
   ],
   controllers: [VacantesController],
   providers: [
+    RequisitosTecnicosService
     VacantesEstructuraService,
     VacantesService,
     ElasticsearchService,
@@ -21,6 +23,7 @@ import { VacantesService } from './vacantes.service';
   ],
   exports: [
     VacantesEstructuraService,
+    RequisitosTecnicosService,
     VacantesService,
   ],
 })

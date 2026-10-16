@@ -71,6 +71,24 @@ if (newErrors.length > 0) {
 }
 
 try {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const vacancies: Vacancy[] = saved ? JSON.parse(saved) : [];
+
+  if (!Array.isArray(vacancies)) {
+    throw new Error('Los datos guardados no tienen el formato esperado.');
+  }
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify([...vacancies, vacancy]),
+  );
+
+  router.push(
+    `/vacantes/nueva/requisitos?id=${vacancy.id}&titulo=${encodeURIComponent(vacancy.title)}`,
+  );
+  router.refresh();
+
+} catch {
   setIsSaving(true);
   const vacancy = await createVacancy({
     idEmpresa: configuredCompanyId,
