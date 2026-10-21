@@ -118,9 +118,17 @@ export default function DetalleVacanteCliente({ id }: Props) {
             )}
           </section>
 
-          <Link href="/vacantes" className="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[7px] border border-[#ddd6c8] bg-white px-6 text-[13px] font-semibold hover:bg-[#faf8f4] sm:w-[180px]">
-            Volver a vacantes
-          </Link>
+          <div className="mt-auto flex flex-col gap-3 pt-8 sm:flex-row">
+            <Link
+              href={`/vacantes/${encodeURIComponent(vacancy.id)}/editar`}
+              className="inline-flex h-11 items-center justify-center rounded-[7px] bg-[#ffb162] px-6 text-[13px] font-semibold text-[#1b2632] hover:bg-[#f2a455]"
+            >
+              Editar vacante
+            </Link>
+            <Link href="/vacantes" className="inline-flex h-11 items-center justify-center rounded-[7px] border border-[#ddd6c8] bg-white px-6 text-[13px] font-semibold hover:bg-[#faf8f4]">
+              Volver a vacantes
+            </Link>
+          </div>
         </article>
       </div>
       <VacancyAdminFooter />

@@ -13,7 +13,49 @@ const BACKEND_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.trim() || DEFAULT_API_URL;
 
 export class TechnicalRequirementsClient {
-  constructor(private readonly baseUrl: string = BACKEND_BASE_URL) {}
+  private readonly baseUrl: string;
+
+  constructor(baseUrl: string = BACKEND_BASE_URL) {
+    this.baseUrl = baseUrl;
+  }
+
+  private async requestRemote<T>(
+    path: string,
+    init?: RequestInit,
+  ): Promise<T> {
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        ...init,
+        headers: {
+          'Content-Type': 'application/json',
+          ...init?.headers,
+        },
+        cache: 'no-store',
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw error;
+      }
+      throw new Error(
+        'No se pudo conectar con el servicio de requisitos técnicos.',
+      );
+    }
+
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => null);
+      const message = isRecord(body) ? body.message : undefined;
+      throw new Error(
+        Array.isArray(message)
+          ? message.filter((item): item is string => typeof item === 'string').join(' ')
+          : typeof message === 'string'
+            ? message
+            : 'No se pudo actualizar los requisitos técnicos.',
+      );
+    }
+
+    return (await response.json()) as T;
+  }
 
   /**
    * Helper to canonicalize skill names for duplicate comparison
@@ -202,6 +244,23 @@ export class TechnicalRequirementsClient {
     return TechnicalRequirementsClient.getLocalRequirements(idVacante);
   }
 
+  async obtenerRequisitosRemotos(
+    idVacante: string,
+  ): Promise<RequisitoTecnico[]> {
+    const requirements = await this.requestRemote<unknown>(
+      `/vacantes/${encodeURIComponent(idVacante)}/requisitos`,
+    );
+    if (
+      !Array.isArray(requirements) ||
+      !requirements.every(isTechnicalRequirement)
+    ) {
+      throw new Error(
+        'El servicio devolvió requisitos técnicos con un formato no válido.',
+      );
+    }
+    return requirements;
+  }
+
   /**
    * Retrieves matching index structure for a vacancy
    */
@@ -268,6 +327,48 @@ export class TechnicalRequirementsClient {
     return updated;
   }
 
+  async actualizarRequisitoRemoto(
+    idVacante: string,
+    idRequisito: string,
+    data: { nivel?: string; tipo?: string; descripcion?: string },
+  ): Promise<RequisitoTecnico> {
+    const requirement = await this.requestRemote<unknown>(
+      `/vacantes/${encodeURIComponent(idVacante)}/requisitos/${encodeURIComponent(idRequisito)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      },
+    );
+    if (!isTechnicalRequirement(requirement)) {
+      throw new Error(
+        'El servicio devolvió un requisito técnico con un formato no válido.',
+      );
+    }
+    return requirement;
+  }
+
+  async asociarRequisitosRemotos(
+    idVacante: string,
+    requisitos: Omit<RequisitoTecnico, 'id' | 'idVacante' | 'fechaCreacion'>[],
+  ): Promise<RequisitoTecnico[]> {
+    const requirements = await this.requestRemote<unknown>(
+      `/vacantes/${encodeURIComponent(idVacante)}/requisitos`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ requisitos }),
+      },
+    );
+    if (
+      !Array.isArray(requirements) ||
+      !requirements.every(isTechnicalRequirement)
+    ) {
+      throw new Error(
+        'El servicio devolvió requisitos técnicos con un formato no válido.',
+      );
+    }
+    return requirements;
+  }
+
   /**
    * Deletes a requirement
    */
@@ -288,6 +389,40 @@ export class TechnicalRequirementsClient {
     const filtered = current.filter((item) => item.id !== idRequisito);
     TechnicalRequirementsClient.saveLocalRequirements(idVacante, filtered);
   }
+
+  async eliminarRequisitoRemoto(
+    idVacante: string,
+    idRequisito: string,
+  ): Promise<void> {
+    await this.requestRemote<unknown>(
+      `/vacantes/${encodeURIComponent(idVacante)}/requisitos/${encodeURIComponent(idRequisito)}`,
+      { method: 'DELETE' },
+    );
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isTechnicalRequirement(
+  value: unknown,
+): value is RequisitoTecnico {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === 'string' &&
+    typeof value.idVacante === 'string' &&
+    typeof value.competencia === 'string' &&
+    (value.nivel === 'Básico' ||
+      value.nivel === 'Intermedio' ||
+      value.nivel === 'Avanzado' ||
+      value.nivel === 'Experto') &&
+    (value.tipo === 'Obligatorio' || value.tipo === 'Deseable') &&
+    (value.descripcion === undefined ||
+      typeof value.descripcion === 'string') &&
+    (value.fechaCreacion === undefined ||
+      typeof value.fechaCreacion === 'string')
+  );
 }
 
 export const technicalRequirementsClient = new TechnicalRequirementsClient();

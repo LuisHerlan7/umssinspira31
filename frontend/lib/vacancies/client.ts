@@ -17,12 +17,17 @@ export interface VacancyStructureClientOptions {
 }
 
 export class VacancyStructureApiError extends Error {
+  public readonly details: string[];
+  public readonly status?: number;
+
   constructor(
-    public readonly details: string[],
-    public readonly status?: number,
+    details: string[],
+    status?: number,
   ) {
     super(details.join(" "));
     this.name = "VacancyStructureApiError";
+    this.details = details;
+    this.status = status;
   }
 }
 

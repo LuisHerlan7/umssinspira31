@@ -1,115 +1,127 @@
-export type RequisitoTecnico = {
-  nombre: string;
-  nivel: "Básico" | "Intermedio" | "Avanzado";
-  tipo: "Obligatorio" | "Deseable";
+import {
+  getVacancyIdentifier,
+  type Vacancy,
+} from '../../../../lib/api/vacantes';
+import type {
+  NivelEsperado,
+  RequisitoTecnico,
+  TipoRequisito,
+} from '../../../../lib/vacancies/contracts';
+
+export type RequisitoTecnicoEditable = {
+  id?: string;
+  competencia: string;
+  nivel: NivelEsperado;
+  tipo: TipoRequisito;
+  descripcion?: string;
 };
 
 export type VacanteEditable = {
   id: string;
   nombre: string;
-  estado: "Disponible" | "No disponible";
+  estado: string;
   codigo: string;
   descripcion: string;
-  requisitos: RequisitoTecnico[];
+  requisitos: RequisitoTecnicoEditable[];
 };
 
 export type EstadoEdicion =
-  | "inicial"
-  | "error"
-  | "pendiente"
-  | "guardado";
+  | 'cargando'
+  | 'inicial'
+  | 'error'
+  | 'pendiente'
+  | 'guardando'
+  | 'guardado';
 
-// Datos de ejemplo para probar los 4 mockups.
-// Posteriormente se reemplazarán por la API del backend.
-export function crearVacanteEjemplo(id: string): VacanteEditable {
+export function crearVacanteEditable(
+  vacancy: Vacancy,
+  requirements: RequisitoTecnico[],
+): VacanteEditable {
   return {
-    id,
-    nombre: "Analista de Datos Junior",
-    estado: "Disponible",
-    codigo: `VAC-${id.padStart(4, "0")}`,
-    descripcion:
-      "Apoyar análisis comercial, reportes y tableros para toma de decisiones.",
-    requisitos: [
-      { nombre: "SQL", nivel: "Avanzado", tipo: "Obligatorio" },
-      { nombre: "Python", nivel: "Intermedio", tipo: "Obligatorio" },
-      { nombre: "Power BI", nivel: "Intermedio", tipo: "Obligatorio" },
-      { nombre: "Excel", nivel: "Avanzado", tipo: "Deseable" },
-    ],
+    id: vacancy.id,
+    nombre: vacancy.titulo,
+    estado: vacancy.estado,
+    codigo: getVacancyIdentifier(vacancy),
+    descripcion: vacancy.descripcion,
+    requisitos: requirements.map((requirement) => ({
+      id: requirement.id,
+      competencia: requirement.competencia,
+      nivel: requirement.nivel,
+      tipo: requirement.tipo,
+      descripcion: requirement.descripcion,
+    })),
   };
 }
 
 export function requisitoDuplicado(
-  requisitos: RequisitoTecnico[],
-  nombre: string
+  requisitos: RequisitoTecnicoEditable[],
+  nombre: string,
 ): boolean {
+  const normalizedName = canonicalName(nombre);
   return requisitos.some(
-    (r) =>
-      r.nombre.trim().toLowerCase() ===
-      nombre.trim().toLowerCase()
+    (requirement) => canonicalName(requirement.competencia) === normalizedName,
   );
 }
 
-export function validarVacante(
-  vacante: VacanteEditable
-): string | null {
+export function validarVacante(vacante: VacanteEditable): string | null {
   if (!vacante.nombre.trim()) {
-    return "El nombre del cargo es obligatorio.";
+    return 'El nombre del cargo es obligatorio.';
+  }
+
+  if (vacante.nombre.trim().length > 150) {
+    return 'El nombre del cargo no puede superar los 150 caracteres.';
   }
 
   if (!vacante.descripcion.trim()) {
-    return "La descripción de la vacante es obligatoria.";
+    return 'La descripción de la vacante es obligatoria.';
+  }
+
+  if (
+    vacante.descripcion.trim().length < 20 ||
+    vacante.descripcion.trim().length > 4000
+  ) {
+    return 'La descripción debe tener entre 20 y 4000 caracteres.';
+  }
+
+  if (!vacante.estado.trim()) {
+    return 'Selecciona un estado para la vacante.';
   }
 
   if (vacante.requisitos.length === 0) {
-    return "La vacante debe tener al menos un requisito técnico.";
+    return 'La vacante debe tener al menos un requisito técnico.';
   }
 
-  const nombres = vacante.requisitos.map((r) =>
-    r.nombre.trim().toLowerCase()
-  );
+  if (vacante.requisitos.length > 30) {
+    return 'La vacante no puede tener más de 30 requisitos técnicos.';
+  }
 
-  if (new Set(nombres).size !== nombres.length) {
-    return "No se permiten requisitos técnicos duplicados.";
+  if (vacante.requisitos.some((requirement) => requirement.competencia.trim().length < 2)) {
+    return 'Cada requisito técnico debe tener al menos 2 caracteres.';
+  }
+
+  if (
+    vacante.requisitos.some((requirement) => requirement.competencia.trim().length > 100)
+  ) {
+    return 'Cada requisito técnico puede tener como máximo 100 caracteres.';
+  }
+
+  if (
+    new Set(
+      vacante.requisitos.map((requirement) =>
+        canonicalName(requirement.competencia),
+      ),
+    ).size !== vacante.requisitos.length
+  ) {
+    return 'No se permiten requisitos técnicos duplicados.';
   }
 
   return null;
 }
 
-// Almacenamiento aislado para la demostración.
-// No modifica el almacenamiento que utilizan otros módulos.
-export function guardarDemostracion(
-  vacante: VacanteEditable
-): void {
-  if (typeof window === "undefined") return;
-
-  localStorage.setItem(
-    `hu5-edicion-demo-${vacante.id}`,
-    JSON.stringify(vacante)
-  );
-}
-
-export function leerDemostracion(
-  id: string
-): VacanteEditable | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const datos = localStorage.getItem(`hu5-edicion-demo-${id}`);
-    if (!datos) return null;
-
-    const vacante = JSON.parse(datos) as VacanteEditable;
-
-    if (
-      vacante.id !== id ||
-      typeof vacante.nombre !== "string" ||
-      typeof vacante.descripcion !== "string" ||
-      !Array.isArray(vacante.requisitos)
-    ) {
-      return null;
-    }
-
-    return vacante;
-  } catch {
-    return null;
-  }
+function canonicalName(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 }

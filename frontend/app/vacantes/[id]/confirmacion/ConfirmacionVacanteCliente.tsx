@@ -179,7 +179,7 @@ export default function ConfirmacionVacanteCliente({ id }: { id: string }) {
             </ul>
             <div className="mt-auto space-y-3 pt-10">
               <Link
-                href={`/vacantes/${encodeURIComponent(vacancy.id)}`}
+                href={`/vacantes/${encodeURIComponent(vacancy.id)}/editar`}
                 className="flex min-h-11 items-center justify-center rounded-lg bg-[#ffb162] px-4 text-[13px] font-semibold text-[#1b2632] hover:bg-[#f2a455]"
               >
                 Editar vacante
