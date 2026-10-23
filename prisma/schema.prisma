@@ -1,0 +1,47 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Usuario {
+  usuario_id String   @id @default(uuid())
+  nombre     String   @db.VarChar(45)
+  rol        String   @db.VarChar(20)
+  empresas   Empresa[]
+
+  @@map("usuario")
+}
+
+model Empresa {
+  id           String    @id @default(uuid())
+  id_usuario   String
+  razon_social String    @db.VarChar(100)
+  nit          String    @db.VarChar(20)
+  descripcion  String    @db.VarChar(255)
+  correo       String    @db.VarChar(255)
+  sitio_web    String    @db.VarChar(45)
+  fecha_registro DateTime @default(now()) @db.Timestamp()
+  
+  usuario      Usuario   @relation(fields: [id_usuario], references: [usuario_id])
+  vacantes     Vacante[]
+
+  @@map("empresa")
+}
+
+model Vacante {
+  id          String   @id @default(uuid())
+  id_empresa  String
+  titulo      String   @db.VarChar(150)
+  salario     Decimal? @db.Decimal(10, 2)
+  modalidad   String   @db.VarChar(50)
+  estado      String   @db.VarChar(30)
+  created_at  DateTime @default(now()) @db.Timestamp()
+
+  empresa     Empresa  @relation(fields: [id_empresa], references: [id])
+
+  @@map("vacante")
+}
