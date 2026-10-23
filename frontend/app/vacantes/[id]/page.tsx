@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import DetalleVacanteCliente from './DetalleVacanteCliente';
+import { boardStyles as styles } from '../components/jobs-styles';
 
 export const instant = false;
 
@@ -18,8 +19,8 @@ export default async function DetalleVacantePage({
   return (
     <Suspense
       fallback={
-        <main className="min-h-[calc(100vh-84px)] bg-[#eee9df] px-5 py-10 text-center text-sm text-[#6e7880]">
-          Cargando detalle de la vacante...
+        <main className={styles.page}>
+          <div className={styles.content}><p role="status">Cargando detalle de la vacante...</p></div>
         </main>
       }
     >

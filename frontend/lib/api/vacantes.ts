@@ -33,6 +33,16 @@ type ApiErrorBody = {
   message?: string | string[];
 };
 
+export class VacancyApiError extends Error {
+  readonly status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = 'VacancyApiError';
+    this.status = status;
+  }
+}
+
 export const DEFAULT_API_URL =
   process.env.NODE_ENV === 'production'
     ? 'https://backend-umsspira.vercel.app'
@@ -65,7 +75,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       throw error;
     }
 
-    throw new Error(
+    throw new VacancyApiError(
       'No se pudo conectar con el servicio de vacantes. Inténtalo nuevamente.',
     );
   }
@@ -83,12 +93,34 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ? body.message.join(' ')
       : body?.message;
 
-    throw new Error(
+    throw new VacancyApiError(
       message || 'No se pudo completar la operación solicitada.',
+      response.status,
     );
   }
 
-  return (await response.json()) as T;
+  try {
+    return (await response.json()) as T;
+  } catch (error) {
+    if (init?.signal?.aborted) throw error;
+    throw new VacancyApiError('El servicio devolvió una respuesta no válida. Inténtalo nuevamente.');
+  }
+}
+
+function isVacancy(value: unknown): value is Vacancy {
+  if (typeof value !== 'object' || value === null) return false;
+  const vacancy = value as Record<string, unknown>;
+  return (
+    ['id', 'idEmpresa', 'empresa', 'titulo', 'modalidad', 'estado', 'descripcion', 'ubicacion', 'area', 'condiciones']
+      .every((field) => typeof vacancy[field] === 'string') &&
+    (vacancy.fechaCreacion === null || typeof vacancy.fechaCreacion === 'string') &&
+    Array.isArray(vacancy.requisitos) &&
+    vacancy.requisitos.every((requirement: unknown) => {
+      if (typeof requirement !== 'object' || requirement === null) return false;
+      const item = requirement as Record<string, unknown>;
+      return typeof item.id === 'string' && typeof item.nombre === 'string' && item.nombre.trim().length > 0;
+    })
+  );
 }
 
 export function createVacancy(input: CreateVacancyInput) {
@@ -98,15 +130,23 @@ export function createVacancy(input: CreateVacancyInput) {
   });
 }
 
-export function getVacancy(id: string) {
-  return request<Vacancy>(`/vacantes/${encodeURIComponent(id)}`);
+export async function getVacancy(id: string, signal?: AbortSignal): Promise<Vacancy> {
+  const vacancy = await request<unknown>(`/vacantes/${encodeURIComponent(id)}`, { signal });
+  if (!isVacancy(vacancy) || vacancy.id.toLowerCase() !== id.toLowerCase()) {
+    throw new VacancyApiError('No se pudo verificar la información de esta vacante. Inténtalo nuevamente.');
+  }
+  return vacancy;
 }
 
-export function searchIndexedVacancies(query: string, signal?: AbortSignal) {
+export async function searchIndexedVacancies(query: string, signal?: AbortSignal): Promise<Vacancy[]> {
   const search = new URLSearchParams({ q: query.trim() });
-  return request<Vacancy[]>(`/vacantes/buscar?${search.toString()}`, {
+  const vacancies = await request<unknown>(`/vacantes/buscar?${search.toString()}`, {
     signal,
   });
+  if (!Array.isArray(vacancies) || !vacancies.every(isVacancy)) {
+    throw new VacancyApiError('No se pudo verificar el listado de vacantes. Inténtalo nuevamente.');
+  }
+  return vacancies;
 }
 
 export function listVacancies(idEmpresa: string) {

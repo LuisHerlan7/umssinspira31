@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import JobsPortalHeader from '../vacantes/components/JobsPortalHeader';
 import {
   Briefcase,
   ChevronDown,
@@ -393,7 +394,7 @@ function ActiveNavContainer() {
   );
 }
 
-export default function PortalHeader() {
+function ExistingPortalHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#2c3b4d] bg-[#1b2632] text-[#eee9df]">
       <div className="mx-auto flex min-h-[84px] max-w-[1440px] items-center gap-6 px-5 sm:px-8 lg:px-5">
@@ -479,5 +480,20 @@ export default function PortalHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+function HeaderForRoute() {
+  const pathname = usePathname();
+  const isHu8 = pathname === '/vacantes' ||
+    /^\/vacantes\/(?!nueva$|disponibilidad$)[^/]+$/.test(pathname ?? '');
+  return isHu8 ? <JobsPortalHeader key={pathname} /> : <ExistingPortalHeader />;
+}
+
+export default function PortalHeader() {
+  return (
+    <Suspense fallback={<ExistingPortalHeader />}>
+      <HeaderForRoute />
+    </Suspense>
   );
 }
