@@ -7,6 +7,7 @@ import { SupabaseModule } from './config/supabase.module';
 import { FormacionAcademicaModule } from './modules/formacion-academica/formacion-academica.module';
 import { ExperienciaLaboralModule } from './modules/experiencia-laboral/experiencia-laboral.module';
 import { VacantesModule } from './modules/vacantes/vacantes.module';
+import { DisponibilidadMentorModule } from './modules/disponibilidad-mentor/disponibilidad-mentor.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { VacantesModule } from './modules/vacantes/vacantes.module';
     FormacionAcademicaModule,
     ExperienciaLaboralModule,
     VacantesModule,
+    DisponibilidadMentorModule,
   ],
   controllers: [AppController],
   providers: [AppService],
