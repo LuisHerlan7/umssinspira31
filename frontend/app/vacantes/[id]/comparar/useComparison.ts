@@ -1,7 +1,11 @@
 'use client';
 
-import { useMemo, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import type { Skill } from '../../../skills/data';
+import {
+  getVacancy,
+  type Vacancy as ApiVacancy,
+} from '../../../../lib/api/vacantes';
 import {
   compareRequirements,
   parseProfileSkills,
@@ -27,14 +31,27 @@ type ComparisonState = {
   error: string;
 };
 
+function mapApiVacancy(vacancy: ApiVacancy): Vacancy {
+  return {
+    id: vacancy.id,
+    title: vacancy.titulo,
+    company: vacancy.empresa,
+    area: vacancy.area,
+    location: vacancy.ubicacion,
+    modality: vacancy.modalidad,
+    description: vacancy.descripcion,
+    requirements: vacancy.requisitos.map((requirement) => requirement.nombre),
+    conditions: vacancy.condiciones,
+  };
+}
+
 export function useComparison(id: string): ComparisonState {
   const snapshot = useSyncExternalStore(
     subscribeToLocalStorage,
     readComparisonSnapshot,
     () => SERVER_STORAGE_SNAPSHOT,
   );
-
-  return useMemo(() => {
+  const localState = useMemo(() => {
     if (snapshot === SERVER_STORAGE_SNAPSHOT) {
       return {
         loaded: false,
@@ -101,4 +118,70 @@ export function useComparison(id: string): ComparisonState {
       };
     }
   }, [id, snapshot]);
+
+  const [remoteResult, setRemoteResult] = useState<{
+    id: string;
+    vacancy: Vacancy | null;
+    error: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!localState.loaded || localState.vacancy || localState.error) return;
+
+    let active = true;
+
+    getVacancy(id)
+      .then((result) => {
+        if (!active) return;
+        setRemoteResult({
+        id,
+        vacancy: mapApiVacancy(result),
+        error: '',
+        });
+      })
+      .catch((requestError: unknown) => {
+        if (!active) return;
+        setRemoteResult({
+        id,
+        vacancy: null,
+        error:
+          requestError instanceof Error
+            ? requestError.message
+            : 'No se pudo cargar la vacante para la comparación.',
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id, localState.error, localState.loaded, localState.vacancy]);
+
+  const currentRemoteResult =
+    remoteResult?.id === id ? remoteResult : null;
+  if (localState.vacancy || localState.error) return localState;
+
+  if (!currentRemoteResult) {
+    return {
+      ...localState,
+      loaded: false,
+    };
+  }
+
+  if (currentRemoteResult.error || !currentRemoteResult.vacancy) {
+    return {
+      ...localState,
+      loaded: true,
+      error: currentRemoteResult.error,
+    };
+  }
+
+  return {
+    ...localState,
+    loaded: true,
+    vacancy: currentRemoteResult.vacancy,
+    requirements: compareRequirements(
+      currentRemoteResult.vacancy,
+      localState.skills,
+    ),
+  };
 }

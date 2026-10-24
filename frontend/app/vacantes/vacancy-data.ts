@@ -98,6 +98,26 @@ export function readSavedVacancies(): Vacancy[] {
   return parseSavedVacancies(localStorage.getItem(VACANCIES_STORAGE_KEY));
 }
 
+export function saveLocalVacancy(
+  input: Omit<Vacancy, 'id' | 'createdAt'>,
+): Vacancy {
+  const savedVacancies = readSavedVacancies();
+  const id = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const vacancy: Vacancy = {
+    ...input,
+    id,
+    createdAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem(
+    VACANCIES_STORAGE_KEY,
+    JSON.stringify([...savedVacancies, vacancy]),
+  );
+  window.dispatchEvent(new Event(VACANCIES_CHANGED_EVENT));
+
+  return vacancy;
+}
+
 export function getVacanciesIn(
   savedVacancies: Vacancy[],
   { includeUnavailable = false }: { includeUnavailable?: boolean } = {},
