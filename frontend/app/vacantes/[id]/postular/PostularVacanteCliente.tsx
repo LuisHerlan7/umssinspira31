@@ -1,6 +1,12 @@
 'use client';
 
-import { FormEvent, useMemo, useState, useSyncExternalStore } from 'react';
+import {
+  FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -24,6 +30,11 @@ import {
   readVacancySnapshot,
   subscribeToLocalStorage,
 } from '../../storage';
+import {
+  getVacancy,
+  isVacancyAvailable,
+  type Vacancy as ApiVacancy,
+} from '../../../../lib/api/vacantes';
 
 type Application = {
 id: string;
@@ -52,6 +63,22 @@ code = `POS-${year}-${suffix}`;
 return code;
 }
 
+function mapApiVacancy(vacancy: ApiVacancy): Vacancy {
+  return {
+    id: vacancy.id,
+    title: vacancy.titulo,
+    company: vacancy.empresa,
+    area: vacancy.area,
+    location: vacancy.ubicacion,
+    modality: vacancy.modalidad,
+    description: vacancy.descripcion,
+    requirements: vacancy.requisitos.map((requirement) => requirement.nombre),
+    conditions: vacancy.condiciones,
+    createdAt: vacancy.fechaCreacion ?? undefined,
+    availability: 'available',
+  };
+}
+
 export default function PostularVacanteCliente({
   id,
 }: {
@@ -65,7 +92,11 @@ const snapshot = useSyncExternalStore(
   readVacancySnapshot,
   () => SERVER_STORAGE_SNAPSHOT,
 );
-const { vacancy, loaded, loadError } = useMemo(() => {
+const {
+  vacancy: localVacancy,
+  loaded,
+  loadError,
+} = useMemo(() => {
   if (snapshot === SERVER_STORAGE_SNAPSHOT) {
     return { vacancy: null, loaded: false, loadError: '' };
   }
@@ -92,6 +123,11 @@ const { vacancy, loaded, loadError } = useMemo(() => {
     };
   }
 }, [snapshot, vacancyId]);
+const [remoteResult, setRemoteResult] = useState<{
+  id: string;
+  vacancy: Vacancy | null;
+  error: string;
+} | null>(null);
 const [name, setName] = useState('');
 const [email, setEmail] = useState('');
 const [phone, setPhone] = useState('');
@@ -99,6 +135,50 @@ const [motivation, setMotivation] = useState('');
 const [authorized, setAuthorized] = useState(false);
 const [errors, setErrors] = useState<string[]>([]);
 const [saveError, setSaveError] = useState('');
+
+useEffect(() => {
+  if (!loaded || localVacancy) return;
+
+  let active = true;
+
+  getVacancy(vacancyId)
+    .then((result) => {
+      if (!active) return;
+      if (!isVacancyAvailable(result.estado)) {
+        setRemoteResult({
+          id: vacancyId,
+          vacancy: null,
+          error: 'Esta vacante ya no está disponible para postulaciones.',
+        });
+        return;
+      }
+      setRemoteResult({
+        id: vacancyId,
+        vacancy: mapApiVacancy(result),
+        error: '',
+      });
+    })
+    .catch((requestError: unknown) => {
+      if (!active) return;
+      setRemoteResult({
+        id: vacancyId,
+        vacancy: null,
+        error:
+          requestError instanceof Error
+            ? requestError.message
+            : 'No se pudo cargar la vacante.',
+      });
+    });
+
+  return () => {
+    active = false;
+  };
+}, [loaded, localVacancy, vacancyId]);
+
+const remoteData = remoteResult?.id === vacancyId ? remoteResult : null;
+const vacancy = localVacancy ?? remoteData?.vacancy ?? null;
+const isLoading = !loaded || (!localVacancy && !remoteData);
+const vacancyLoadError = loadError || remoteData?.error || '';
 
 const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 event.preventDefault();
@@ -137,7 +217,7 @@ if (newErrors.length > 0) {
 
 let currentVacancy: Vacancy | undefined;
 try {
-  currentVacancy = findVacancy(vacancyId);
+  currentVacancy = findVacancy(vacancyId) ?? vacancy ?? undefined;
 } catch {
   setSaveError(
     'No se pudo verificar la disponibilidad de esta vacante. Inténtalo de nuevo.',
@@ -207,13 +287,13 @@ try {
 
 };
 
-if (!loaded) {
+if (isLoading) {
 return ( <main className="min-h-screen bg-[#f1eee4] px-5 py-10"> <p className="text-center text-gray-600">Cargando vacante...</p> </main>
 );
 }
 
 if (!vacancy) {
-return ( <main className="min-h-screen bg-[#f1eee4] px-5 py-10"> <div className="mx-auto max-w-2xl rounded-lg bg-white p-8 text-center shadow-sm"> <h1 className="text-2xl font-bold text-gray-800">{loadError ? 'No se puede postular a esta vacante' : 'Vacante no encontrada'}</h1> <p role={loadError ? 'alert' : undefined} className="mt-3 text-sm text-gray-600">{loadError || 'Es posible que la vacante no exista o ya no esté disponible.'}</p> <Link
+return ( <main className="min-h-screen bg-[#f1eee4] px-5 py-10"> <div className="mx-auto max-w-2xl rounded-lg bg-white p-8 text-center shadow-sm"> <h1 className="text-2xl font-bold text-gray-800">{vacancyLoadError ? 'No se puede postular a esta vacante' : 'Vacante no encontrada'}</h1> <p role={vacancyLoadError ? 'alert' : undefined} className="mt-3 text-sm text-gray-600">{vacancyLoadError || 'Es posible que la vacante no exista o ya no esté disponible.'}</p><Link
          href="/vacantes"
          className="mt-5 inline-flex items-center gap-2 rounded-md bg-orange-400 px-4 py-3 font-semibold text-white"
        > <ArrowLeft size={17} /> Volver a vacantes </Link> </div> </main>

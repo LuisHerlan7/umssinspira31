@@ -9,6 +9,7 @@ import {
   configuredCompanyName,
   createVacancy,
 } from '../../../lib/api/vacantes';
+import { saveLocalVacancy } from '../vacancy-data';
 
 const AREAS = [
 'Desarrollo de Software',
@@ -19,11 +20,16 @@ const AREAS = [
 'Otra área',
 ];
 
+const hasBackendCompany =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    configuredCompanyId,
+  );
+
 export default function NuevaVacantePage() {
 const router = useRouter();
 
 const [title, setTitle] = useState('');
-const [company] = useState(configuredCompanyName);
+const [company, setCompany] = useState(configuredCompanyName);
 const [area, setArea] = useState('');
 const [location, setLocation] = useState('');
 const [modality, setModality] = useState('');
@@ -32,12 +38,14 @@ const [requirements, setRequirements] = useState('');
 const [conditions, setConditions] = useState('');
 const [errors, setErrors] = useState<string[]>([]);
 const [saveError, setSaveError] = useState('');
+const [saveNotice, setSaveNotice] = useState('');
 const [isSaving, setIsSaving] = useState(false);
 
 const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 event.preventDefault();
 setErrors([]);
 setSaveError('');
+setSaveNotice('');
 
 
 const newErrors: string[] = [];
@@ -50,13 +58,6 @@ if (!modality) newErrors.push('Selecciona una modalidad de trabajo.');
 if (!description.trim()) newErrors.push('La descripción es obligatoria.');
 if (!requirements.trim()) newErrors.push('Debes registrar al menos un requisito.');
 if (!conditions.trim()) newErrors.push('Las condiciones de trabajo son obligatorias.');
-if (!configuredCompanyId) {
-  newErrors.push('No se configuró la empresa que registrará la vacante.');
-}
-if (!configuredCompanyName) {
-  newErrors.push('No se configuró el nombre de la empresa.');
-}
-
 if (title.trim().length > 100) {
   newErrors.push('El cargo no puede superar los 100 caracteres.');
 }
@@ -72,25 +73,78 @@ if (newErrors.length > 0) {
 
     try {
       setIsSaving(true);
-      const vacancy = await createVacancy({
-        idEmpresa: configuredCompanyId,
-        titulo: title.trim(),
-        modalidad: modality,
-        descripcion: description.trim(),
-        ubicacion: location.trim(),
-        area,
-        condiciones: conditions.trim(),
-        requisitos: requirements
-          .split('\n')
-          .map((item) => item.trim())
-          .filter(Boolean),
-      });
+      const inputRequirements = requirements
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean);
 
-      router.push(
-        `/vacantes/nueva/requisitos?id=${encodeURIComponent(vacancy.id)}&titulo=${encodeURIComponent(vacancy.titulo)}`,
-      );
+      if (hasBackendCompany) {
+        const vacancy = await createVacancy({
+          idEmpresa: configuredCompanyId,
+          titulo: title.trim(),
+          modalidad: modality,
+          descripcion: description.trim(),
+          ubicacion: location.trim(),
+          area,
+          condiciones: conditions.trim(),
+          requisitos: inputRequirements,
+        });
+
+        router.push(
+          `/vacantes/nueva/requisitos?id=${encodeURIComponent(vacancy.id)}&titulo=${encodeURIComponent(vacancy.titulo)}`,
+        );
+      } else {
+        const vacancy = saveLocalVacancy({
+          title: title.trim(),
+          company: company.trim(),
+          area,
+          location: location.trim(),
+          modality,
+          description: description.trim(),
+          requirements: inputRequirements,
+          conditions: conditions.trim(),
+          availability: 'available',
+        });
+
+        router.push(`/vacantes/${encodeURIComponent(String(vacancy.id))}`);
+      }
       router.refresh();
     } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('No se pudo conectar con el servicio de vacantes.')
+      ) {
+        try {
+          const vacancy = saveLocalVacancy({
+            title: title.trim(),
+            company: company.trim(),
+            area,
+            location: location.trim(),
+            modality,
+            description: description.trim(),
+            requirements: requirements
+              .split('\n')
+              .map((item) => item.trim())
+              .filter(Boolean),
+            conditions: conditions.trim(),
+            availability: 'available',
+          });
+
+          setSaveNotice(
+            'El servicio no está disponible. La vacante se guardó en este navegador para que puedas revisar su detalle.',
+          );
+          router.push(`/vacantes/${encodeURIComponent(String(vacancy.id))}`);
+          return;
+        } catch (localError) {
+          setSaveError(
+            localError instanceof Error
+              ? `No se pudo conectar con el servicio y tampoco guardar la vacante localmente: ${localError.message}`
+              : 'No se pudo conectar con el servicio ni guardar la vacante localmente.',
+          );
+          return;
+        }
+      }
+
       setSaveError(
         error instanceof Error
           ? error.message
@@ -128,13 +182,13 @@ Volver a vacantes </Link>
           </div>
         </div>
 
-        <Link
-          href="/vacantes/nueva/requisitos?id=VAC-2026-047&titulo=Analista%20de%20Datos%20Junior"
-          className="inline-flex items-center gap-2 rounded-lg border border-[#e7d8bf] bg-[#fffaf0] px-4 py-2.5 text-xs font-semibold text-[#a8651a] hover:bg-[#fff2dc] transition-colors shadow-xs"
-        >
-          <span>Ir a Requisitos Técnicos (Paso 2)</span>
-          <span>→</span>
-        </Link>
+        {!hasBackendCompany && (
+          <p role="status" className="mb-5 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Modo de prueba: las vacantes se guardarán solo en este navegador y
+            podrás abrir sus detalles, pero no se publicarán en el backend.
+          </p>
+        )}
+
       </div>
     </div>
 
@@ -169,6 +223,12 @@ Volver a vacantes </Link>
         </div>
       )}
 
+      {saveNotice && (
+        <p role="status" className="mb-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          {saveNotice}
+        </p>
+      )}
+
       <div className="grid gap-5 md:grid-cols-2">
         <div>
           <label htmlFor="title" className="mb-2 block text-sm font-semibold text-gray-700">
@@ -191,7 +251,8 @@ Volver a vacantes </Link>
           <input
             id="company"
             value={company}
-            readOnly
+            onChange={(event) => setCompany(event.target.value)}
+            readOnly={hasBackendCompany}
             placeholder="Configura NEXT_PUBLIC_EMPRESA_NAME"
             className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-3 text-sm text-gray-700 outline-none"
           />
